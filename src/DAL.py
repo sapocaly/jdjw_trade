@@ -31,9 +31,7 @@ class StockDAL:
 		print sql
 		count = self.cur.execute(sql)
 		result = self.cur.fetchall()
-		for res in result:
-			print res
-
+		return result
 
 
 

@@ -24,6 +24,10 @@ class Stock(object):
         self.pv_volume = pv_volume
         self.dal_instance = None  # DAL 实例
 
+    def __str__(self):
+        return 'Stock object (%s)' % self.ticker
+    __repr__ = __str__
+
     def update(self):
         pass
 
@@ -53,8 +57,15 @@ class Stock(object):
 class Quote(object):
     __metaclass__ = EntryMetaclass
 
-    def __init__(self, ):
-        pass
+    def __init__(self, ticker, price, volume):
+        self.ticker = ticker
+        self.price = price
+        self.volume = volume
+        self.dal_instance = None
+
+    def __str__(self):
+        return 'Quote object (%s: $%s)' % (self.ticker, self.price)
+    __repr__ = __str__
 
     def update(self):
         pass
@@ -66,7 +77,7 @@ class Quote(object):
     @staticmethod
     def get():
         pass
-    
+
     @staticmethod
     def rm():
         pass
@@ -78,6 +89,10 @@ class Portfolio(object):
     def __init__(self):
         pass
 
+    #def __str__(self):
+    #    return 'Portfolio object (%s)' % self.name
+    #__repr__ = __str__
+
     def update(self):
         pass
 
@@ -88,7 +103,7 @@ class Portfolio(object):
     @staticmethod
     def get():
         pass
-    
+
     @staticmethod
     def rm():
         pass
@@ -100,6 +115,10 @@ class Transaction(object):
     def __init__(self):
         pass
 
+    #def __str__(self):
+    #    return 'Transaction object (%s)' % self.id
+    #__repr__ = __str__
+
     def update(self):
         pass
 
@@ -110,7 +129,7 @@ class Transaction(object):
     @staticmethod
     def get():
         pass
-    
+
     @staticmethod
     def rm():
         pass
@@ -122,6 +141,10 @@ class Indicator(object):
     def __init__(self):
         pass
 
+    #def __str__(self):
+    #    return 'Indicator object (%s)' % self.ticker
+    #__repr__ = __str__
+
     def update(self):
         pass
 
@@ -132,11 +155,12 @@ class Indicator(object):
     @staticmethod
     def get():
         pass
-    
+
     @staticmethod
     def rm():
         pass
 
-#appl = Stock('APPL', 'Apple, Inc.', 'NYSE')
-#Stock.add(appl)
-Stock.get(ticker='APPL')
+if __name__ == '__main__':
+    #appl = Stock('APPL', 'Apple, Inc.', 'NYSE')
+    #Stock.add(appl)
+    Stock.get(ticker='AAPL')

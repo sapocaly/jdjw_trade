@@ -11,11 +11,10 @@ class StockDAL:
 
 
 
-    def insert_into(self,table_name, *args, **args_dict):
+    def insert_into(self,table_name,**args):
         cursor = self.conn.cursor()
-        print args
-        keys = args_dict.keys()
-        values = ["'{0}'".format(args_dict[key]) if isinstance(str(args_dict[key]), basestring) else str(args_dict[key]) for key in keys]
+        keys = args.keys()
+        values = ["'{0}'".format(args[key]) if isinstance(args[key], basestring) else (str(args[key]) if args[key] != None else 'null') for key in keys]
         sql = "insert into {0} ({1})values({2})".format(table_name, ",".join(keys), ",".join(values))
         print sql
         cursor.execute(sql)
@@ -23,9 +22,9 @@ class StockDAL:
 
     def select_from(self, table_name, **args):
         if len(args) > 0:
-            sql = "select * from " + table_name + " where "
+            sql = "select * from {0} where ".format(table_name)
             for key in args:
-                sql += key + '=' + str(args[key]) + ' and '
+                sql += "{0} = {1} and ".format(key, "'{0}'".format(args[key]) if isinstance(args[key], basestring) else (str(args[key]) if args[key] != None else 'null'))
             sql = sql[:-5]
         else:
             sql = "select * from " + table_name
@@ -40,8 +39,8 @@ class StockDAL:
 
 if __name__ =='__main__':
     a = StockDAL()
-    a.insert_into('stock_list', ticker="ali")
-    a.select_from('stock_list')
+    a.insert_into('stock_list', ticker="uber", name=None)
+    a.select_from('stock_list', ticker="ali")
 
 
 

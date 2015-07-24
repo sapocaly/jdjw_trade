@@ -15,40 +15,39 @@ class EntryMetaclass(type):
 class Stock(object):
     __metaclass__ = EntryMetaclass
 
-    # DAL 实例
-    dal_instance = DAL.StockDAL()
-
+    # todo:内存交互method
     def __init__(self, ticker, name=None, exchange=None, pv_close=None, pv_volume=None):
         self.ticker = ticker
         self.name = name
         self.exchange = exchange
         self.pv_close = pv_close
         self.pv_volume = pv_volume
+        self.dal_instance = None  # DAL 实例
 
     def update(self):
         pass
 
     @staticmethod
-    def insert_into(stock):
-        Stock.dal_instance.insert_into('stock_list',
-                                       ticker=stock.ticker, name=stock.name,
-                                       exchange=stock.exchange, pv_close=stock.pv_close,
-                                       pv_volume=stock.pv_close)
+    def add(stock):
+        private_dal_instance = DAL.StockDAL()
+        private_dal_instance.insert_into('stock_list',
+                                         ticker=stock.ticker, name=stock.name,
+                                         exchange=stock.exchange, pv_close=stock.pv_close,
+                                         pv_volume=stock.pv_close)
 
     @staticmethod
-    def select_from(**args):
-        Stock.dal_instance.select_from('stock_list', **args)
-        pass
-
-    @staticmethod
-    def get_all():
-        pass
+    def get(**args):
+        private_dal_instance = DAL.StockDAL()
+        results = private_dal_instance.select_from('stock_list', **args)
+        stocks = []
+        for entry in results:
+            stock = Stock(entry[1], entry[2], entry[3], entry[4], entry[5])
+            stocks.append(stock)
+        return stocks
 
     @staticmethod
     def rm():
         pass
-
-    pass
 
 
 class Quote(object):
@@ -61,22 +60,16 @@ class Quote(object):
         pass
 
     @staticmethod
-    def insert_into():
+    def add():
         pass
 
     @staticmethod
-    def select_from():
+    def get():
         pass
-
-    @staticmethod
-    def get_all():
-        pass
-
+    
     @staticmethod
     def rm():
         pass
-
-    pass
 
 
 class Portfolio(object):
@@ -89,22 +82,16 @@ class Portfolio(object):
         pass
 
     @staticmethod
-    def insert_into():
+    def add():
         pass
 
     @staticmethod
-    def select_from():
+    def get():
         pass
-
-    @staticmethod
-    def get_all():
-        pass
-
+    
     @staticmethod
     def rm():
         pass
-
-    pass
 
 
 class Transaction(object):
@@ -117,22 +104,16 @@ class Transaction(object):
         pass
 
     @staticmethod
-    def insert_into():
+    def add():
         pass
 
     @staticmethod
-    def select_from():
+    def get():
         pass
-
-    @staticmethod
-    def get_all():
-        pass
-
+    
     @staticmethod
     def rm():
         pass
-
-    pass
 
 
 class Indicator(object):
@@ -145,23 +126,17 @@ class Indicator(object):
         pass
 
     @staticmethod
-    def insert_into():
+    def add():
         pass
 
     @staticmethod
-    def select_from():
+    def get():
         pass
-
-    @staticmethod
-    def get_all():
-        pass
-
+    
     @staticmethod
     def rm():
         pass
 
-    pass
-
-appl = Stock('APPL', 'Apple, Inc.', 'NYSE')
-appl.insert_into(appl)
-appl.select_from(ticker='APPL')
+#appl = Stock('APPL', 'Apple, Inc.', 'NYSE')
+#Stock.add(appl)
+Stock.get(ticker='APPL')

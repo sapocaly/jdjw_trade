@@ -57,7 +57,7 @@ class Fetcher():
         yql_url = baseurl + urllib.urlencode({'q': yql_query}) +\
             "&format=json&diagnostics=true&env=store://datatables.org/alltableswithkeys&callback="
         # get data
-        print yql_url
+        #print yql_url
         result = urllib2.urlopen(yql_url).read()
         data = json.loads(result)
         quote_data = data['query']['results']['quote']

@@ -29,6 +29,10 @@ class StockDAL:
 		else:
 			sql = "select * from " + table_name
 		print sql
+		count = self.cur.execute(sql)
+		result = self.cur.fetchall()
+		for res in result:
+			print res
 
 
 
@@ -37,7 +41,7 @@ class StockDAL:
 
 a = StockDAL()
 a.insert_into('stock_list', ticker="'apple'")
-#a.select_from('data', name="'shengye'", age=18)
+a.select_from('stock_list')
 
 
 

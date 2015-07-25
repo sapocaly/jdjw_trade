@@ -1,15 +1,19 @@
-
 # -*- coding: utf-8 -*-
 import mysql.connector
 
 
+##todo：支持更复杂的query范围，><等
+##todo: 变量名等格式化
+##todo: 异常处理
 class StockDAL:
 
+    # 控制是否输出sql todo:对connector反馈一并更好控制
     ECHO = True
-    # todo:增加logger
+    # todo:增加logger，logger也需要控制
 
     def __init__(self):
         # todo: 配置文件化
+        # toda: 线程管理，资源管理
         self.conn = mysql.connector.connect(
             host='www.jdjw.org', user='jdjw', passwd='10041023', database='master_db')
 

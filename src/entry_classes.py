@@ -26,9 +26,14 @@ def int2float(int_num):
 
 # governing class for all entries. this is a dict
 class Entry(dict):
+
+    table = None
+
+    # get key, vales from **kw
     def __init__(self, **kw):
         for k in kw:
             self[k] = kw[k]
+        # self.dal_instance = DAL.StockDAL()
 
     def __getattr__(self, key):
         try:
@@ -39,8 +44,23 @@ class Entry(dict):
     def __setattr__(self, key, value):
         self[key] = value
 
+    # todo: 两套数据，一套用户输入一套数据库操作 (暂时不做)
+    # todi: 增加时间确定
+    def update(self):
+        dal_instance = DAL.StockDAL()
+        dal_instance.update(Stock.table, _id=self.id, **self)
+
+    def add(self):
+        dal_instance = DAL.StockDAL()
+        dal_instance.insert_into(Entry.table, **self)
+        #except Exception as ke:
+        #    print 'Key error: no such keys in table.'
+
 
 class Stock(Entry):
+
+    table = 'stock'  # table name is stock
+
     def __init__(self, **kw):
         if 'ticker' not in kw:
             raise Exception
@@ -50,21 +70,7 @@ class Stock(Entry):
         return 'Stock object (%s)' % self.ticker
     __repr__ = __str__
 
-    #
-    def update(self):
-        dal_instance = DAL.StockDAL()
-        kw = {}
-        for key in self.keys():
-            kw[key] = self[key]
-        dal_instance.update('stock_list', _id=self.id, **kw)
-
-    def add(self):
-        dal_instance = DAL.StockDAL()
-        kw = {}
-        for key in self.keys():
-            kw[key] = self[key]
-        dal_instance.insert_into('stock_list', **kw)
-
+    # todo: 移到上面一层 （逻辑层）
     def update_company_info(self):
         # get company info and stores in db
         # build query url for api
@@ -87,7 +93,7 @@ class Stock(Entry):
     @staticmethod
     def get(**args):
         private_dal_instance = DAL.StockDAL()
-        results = private_dal_instance.select_from('stock_list', **args)
+        results = private_dal_instance.select_from('stock', **args)
         stocks = []
         for entry in results:
             stock = Stock(id=entry[0], ticker=entry[1], name=entry[2], exchange=entry[3], pv_close=entry[4], pv_volume=entry[5])
@@ -100,41 +106,27 @@ class Stock(Entry):
 
 
 class Quote(Entry):
+
+    table = 'quote'
+
     def __init__(self, **kw):
         super(Quote, self).__init__(**kw)
 
     def __str__(self):
-        return 'Quote object (%s: $%s)' % (self.ticker, self.price)
+        return 'Quote object (ID %s: $%s)' % (self.id, self.price)
     __repr__ = __str__
-
-    def update(self):
-        dal_instance = DAL.StockDAL()
-        kw = {}
-        for key in self.keys():
-            kw[key] = self[key]
-        dal_instance.update('stock_quote', _id=self.id, **kw)
-
-    def add(self):
-        dal_instance = DAL.StockDAL()
-        kw = {}
-        for key in self.keys():
-            if key != 'ticker':  # table quote has no column ticker
-                kw[key] = self[key]
-        dal_instance.insert_into('stock_quote', **kw)
 
     @staticmethod
     def get(**args):
         private_dal_instance = DAL.StockDAL()
-        results = private_dal_instance.select(
-                    "select * from stock_quote \
-                    left join stock_list \
-                    on stock_quote.id = stock_list.id")
+        results = private_dal_instance.select_from('quote', **args)
         quotes = []
         for entry in results:
-            quote = Quote(id=entry[0], price=entry[1], volume=entry[2], time=entry[3], ticker=entry[5])
+            quote = Quote(id=entry[0], price=entry[1], volume=entry[2], time=entry[3])
             quotes.append(quote)
         return quotes
 
+    # todo: 移到逻辑层
     @staticmethod
     def rm_after_market_quotes():
         after_market_entries = {}
@@ -144,8 +136,7 @@ class Quote(Entry):
                     (quote.time.hour() == 21 and quote.time.minute() < 30):
                 after_market_entries[(quote.id, quote.time)] = quote.time
         for entry in after_market_entries.keys():
-            #rm()
-            pass
+            rm()
 
     @staticmethod
     def rm():
@@ -224,9 +215,9 @@ class Indicator(Entry):
         pass
 
 if __name__ == '__main__':
-    Quote.rm_after_market_quotes()
-    #st = Stock(ticker='BABA')
-    #st.add()
+    #Quote.rm_after_market_quotes()
+    st = Stock(ticker='TRUE')
+    st.add()
     #st.update_company_info()
 
     #fb.name = 'Facebook'

@@ -31,14 +31,14 @@ def fetch_quotes():
     yql_query = yql_query + ticker_url + "')"
     yql_url = baseurl + urllib.urlencode({'q': yql_query}) +\
         "&format=json&diagnostics=true&env=store://datatables.org/alltableswithkeys&callback="
-    #print yql_url
 
     # get data
     result = urllib2.urlopen(yql_url).read()
     data = json.loads(result)
     quote_data = data['query']['results']['quote']
 
-    quotes = [entry_classes.Quote(id=ticker_id_dict[q['symbol']], ticker=q['symbol'],
+    # create objects
+    quotes = [entry_classes.Quote(id=ticker_id_dict[q['symbol']],
                                   price=entry_classes.unicode2int(q['LastTradePriceOnly']),
                                   volume=q['Volume'])
               for q in quote_data]
@@ -50,4 +50,3 @@ def fetch_quotes():
 
 if __name__ == '__main__':
     fetch_quotes()
-    #print unicode2int('123.234')

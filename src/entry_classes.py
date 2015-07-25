@@ -8,11 +8,23 @@ entries as classes
 import urllib2
 import urllib
 import json
+import datetime
+
 import DAL
-import fetch_data
 
 
-# governing class for all entries
+# unicode to integer (unit: cent)
+def unicode2int(unicode_str):
+    tmp = unicode_str.replace('.', '')
+    int_num = int(tmp)
+    return int_num
+
+
+def int2float(int_num):
+    pass
+
+
+# governing class for all entries. this is a dict
 class Entry(dict):
     def __init__(self, **kw):
         for k in kw:
@@ -66,7 +78,7 @@ class Stock(Entry):
         data = json.loads(result)
         self['name'] = data['query']['results']['quote']['Name']
         self['exchange'] = data['query']['results']['quote']['StockExchange']
-        self['pv_close'] = fetch_data.unicode2int(data['query']['results']['quote']['LastTradePriceOnly'])
+        self['pv_close'] = unicode2int(data['query']['results']['quote']['LastTradePriceOnly'])
         self['pv_volume'] = data['query']['results']['quote']['Volume']
         # update
         self.update()
@@ -90,7 +102,6 @@ class Stock(Entry):
 class Quote(Entry):
     def __init__(self, **kw):
         super(Quote, self).__init__(**kw)
-        self.id = Stock.get(ticker=self.ticker)[0].id  # 从stock_list获取id
 
     def __str__(self):
         return 'Quote object (%s: $%s)' % (self.ticker, self.price)
@@ -107,19 +118,34 @@ class Quote(Entry):
         dal_instance = DAL.StockDAL()
         kw = {}
         for key in self.keys():
-            if key != 'ticker':
+            if key != 'ticker':  # table quote has no column ticker
                 kw[key] = self[key]
         dal_instance.insert_into('stock_quote', **kw)
 
     @staticmethod
     def get(**args):
         private_dal_instance = DAL.StockDAL()
-        results = private_dal_instance.select_from('stock_quote', **args)
+        results = private_dal_instance.select(
+                    "select * from stock_quote \
+                    left join stock_list \
+                    on stock_quote.id = stock_list.id")
         quotes = []
         for entry in results:
-            quote = Quote(id=entry[0], price=entry[1], volume=entry[2])
+            quote = Quote(id=entry[0], price=entry[1], volume=entry[2], time=entry[3], ticker=entry[5])
             quotes.append(quote)
         return quotes
+
+    @staticmethod
+    def rm_after_market_quotes():
+        after_market_entries = {}
+        for quote in Quote.get():
+            if quote.time.weekday() > 4 or\
+                    (quote.time.hour() > 4 and quote.time.hour() < 21) or\
+                    (quote.time.hour() == 21 and quote.time.minute() < 30):
+                after_market_entries[(quote.id, quote.time)] = quote.time
+        for entry in after_market_entries.keys():
+            #rm()
+            pass
 
     @staticmethod
     def rm():
@@ -198,13 +224,14 @@ class Indicator(Entry):
         pass
 
 if __name__ == '__main__':
-    #yoku = Stock(ticker='YOKU', name='Youku', exchange='NASDAQ')
-    #yoku.add()
+    Quote.rm_after_market_quotes()
+    #st = Stock(ticker='BABA')
+    #st.add()
+    #st.update_company_info()
 
     #fb.name = 'Facebook'
     #fb.pv_close = 12345
-    for s in Stock.get():
-        s.update_company_info()
+
     #yoku.pv_close = '20.80'
     #yoku.update()
     #Stock.get(ticker='YOKU')

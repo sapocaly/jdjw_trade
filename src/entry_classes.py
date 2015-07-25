@@ -29,10 +29,10 @@ class Entry(dict):
 
     table = None
 
-    # get key, vales from **kw
-    def __init__(self, **kw):
-        for k in kw:
-            self[k] = kw[k]
+    # get key, vales from **args
+    def __init__(self, **args):
+        for k in args:
+            self[k] = args[k]
         # self.dal_instance = DAL.StockDAL()
 
     def __getattr__(self, key):
@@ -48,11 +48,11 @@ class Entry(dict):
     # todi: 增加时间确定
     def update(self):
         dal_instance = DAL.StockDAL()
-        dal_instance.update(Stock.table, _id=self.id, **self)
+        dal_instance.update(self.__class__.table, _id=self.id, **self)
 
     def add(self):
         dal_instance = DAL.StockDAL()
-        dal_instance.insert_into(Entry.table, **self)
+        dal_instance.insert_into(self.__class__.table, **self)
         #except Exception as ke:
         #    print 'Key error: no such keys in table.'
 
@@ -61,10 +61,10 @@ class Stock(Entry):
 
     table = 'stock'  # table name is stock
 
-    def __init__(self, **kw):
-        if 'ticker' not in kw:
+    def __init__(self, **args):
+        if 'ticker' not in args:
             raise Exception
-        super(Stock, self).__init__(**kw)
+        super(Stock, self).__init__(**args)
 
     def __str__(self):
         return 'Stock object (%s)' % self.ticker
@@ -90,7 +90,7 @@ class Stock(Entry):
         self.update()
 
     # 语句
-    @staticmethod
+    @classmethod
     def get(**args):
         private_dal_instance = DAL.StockDAL()
         results = private_dal_instance.select_from('stock', **args)
@@ -100,8 +100,8 @@ class Stock(Entry):
             stocks.append(stock)
         return stocks
 
-    @staticmethod
-    def rm():
+    @classmethod
+    def rm(**args):
         pass
 
 
@@ -109,14 +109,14 @@ class Quote(Entry):
 
     table = 'quote'
 
-    def __init__(self, **kw):
-        super(Quote, self).__init__(**kw)
+    def __init__(self, **args):
+        super(Quote, self).__init__(**args)
 
     def __str__(self):
         return 'Quote object (ID %s: $%s)' % (self.id, self.price)
     __repr__ = __str__
 
-    @staticmethod
+    @classmethod
     def get(**args):
         private_dal_instance = DAL.StockDAL()
         results = private_dal_instance.select_from('quote', **args)
@@ -127,7 +127,7 @@ class Quote(Entry):
         return quotes
 
     # todo: 移到逻辑层
-    @staticmethod
+    @classmethod
     def rm_after_market_quotes():
         after_market_entries = {}
         for quote in Quote.get():
@@ -136,11 +136,12 @@ class Quote(Entry):
                     (quote.time.hour() == 21 and quote.time.minute() < 30):
                 after_market_entries[(quote.id, quote.time)] = quote.time
         for entry in after_market_entries.keys():
-            rm()
+            Quote.rm(id=entry[0], time=str(entry[1]))
 
-    @staticmethod
-    def rm():
-        pass
+    @classmethod
+    def rm(**args):
+        private_dal_instance = DAL.StockDAL()
+        private_dal_instance.delete_from('quote', **args)
 
 
 class Portfolio(Entry):
@@ -154,15 +155,11 @@ class Portfolio(Entry):
     def update(self):
         pass
 
-    @staticmethod
-    def add():
-        pass
-
-    @staticmethod
+    @classmethod
     def get():
         pass
 
-    @staticmethod
+    @classmethod
     def rm():
         pass
 
@@ -178,15 +175,15 @@ class Transaction(Entry):
     def update(self):
         pass
 
-    @staticmethod
+    @classmethod
     def add():
         pass
 
-    @staticmethod
+    @classmethod
     def get():
         pass
 
-    @staticmethod
+    @classmethod
     def rm():
         pass
 
@@ -202,22 +199,18 @@ class Indicator(Entry):
     def update(self):
         pass
 
-    @staticmethod
-    def add():
-        pass
-
-    @staticmethod
+    @classmethod
     def get():
         pass
 
-    @staticmethod
+    @classmethod
     def rm():
         pass
 
 if __name__ == '__main__':
-    #Quote.rm_after_market_quotes()
-    st = Stock(ticker='TRUE')
-    st.add()
+    Quote.rm_after_market_quotes()
+    #st = Stock(ticker='TRUE')
+    #st.add()
     #st.update_company_info()
 
     #fb.name = 'Facebook'

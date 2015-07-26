@@ -48,6 +48,7 @@ class StockDAL:
             self.logger.info(sql)
             cursor.execute(sql)
             self.conn.commit()
+            cursor.close()
         except Exception as e:
             print e
             self.logger_err.error(e)
@@ -67,6 +68,7 @@ class StockDAL:
             cur = self.conn.cursor()
             cur.execute(sql)
             toReturn = [i for i in cur]
+            cur.close()
             if StockDAL.ECHO:
                 print toReturn
             return toReturn
@@ -89,6 +91,7 @@ class StockDAL:
             cur = self.conn.cursor()
             cur.execute(sql)
             self.conn.commit()
+            cur.close()
         except Exception as e:
             print e
             self.logger_err.error(e)
@@ -98,6 +101,7 @@ class StockDAL:
         cur.execute(sql)
         self.logger.info(sql)
         toReturn = [i for i in cur]
+        cur.close()
         return toReturn
 
     def execute(self, sql):
@@ -105,6 +109,8 @@ class StockDAL:
         cur.execute(sql)
         self.logger.info(sql)
         self.conn.commit()
+        cur.close()
+
 
     def update(self, table_name, **args):
         try:
@@ -133,6 +139,7 @@ class StockDAL:
             self.logger.info(sql)
             cur.execute(sql)
             self.conn.commit()
+            cur.close()
         except Exception as e:
             print e
             self.logger_err.error(e)

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-import mysql.connector
 import logging
 import logging.config
+
+import mysql.connector
+
 import DBconfig
 
 
@@ -10,10 +12,11 @@ def sql_format(val):
         return str(val)
     elif isinstance(val, float):
         return str(val)
-    elif val == None:
+    elif val is None:
         return 'null'
     else:
         return "'{0}'".format(str(val))
+
 
 logging.config.fileConfig("../conf/jdjw_trade_logger.cfg")
 
@@ -22,7 +25,6 @@ logging.config.fileConfig("../conf/jdjw_trade_logger.cfg")
 # todo: 变量名等格式化
 # todo: 异常处理
 class StockDAL:
-
     # 控制是否输出sql todo:对connector反馈一并更好控制
     ECHO = True
     # todo:增加logger，logger也需要控制
@@ -35,7 +37,8 @@ class StockDAL:
         self.logger = logging.getLogger("jdjw_trade_dal")
         self.logger_err = logging.getLogger("jdjw_trade_dal.err")
         self.conn = mysql.connector.connect(
-            host=self.config.DB_HOST, user=self.config.DB_USER, passwd=self.config.DB_PASSWORD, database=self.config.DB_NAME)
+            host=self.config.DB_HOST, user=self.config.DB_USER, passwd=self.config.DB_PASSWORD,
+            database=self.config.DB_NAME)
 
     def close(self):
         self.conn.close()
@@ -138,6 +141,7 @@ class StockDAL:
             print e
             self.logger_err.error(sql)
             self.logger_err.exception(str(e))
+
 
 if __name__ == '__main__':
     a = StockDAL()

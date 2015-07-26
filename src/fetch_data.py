@@ -68,7 +68,7 @@ def fetch_quotes():
                                   volume=q['Volume'],
                                   time=fetch_time)
               for q in quote_data]
-    print quotes
+    #print quotes
 
     # write results into db
     for q in quotes:

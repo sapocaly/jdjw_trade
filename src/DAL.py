@@ -21,7 +21,7 @@ def sql_format(val):
 class StockDAL:
 
     # 控制是否输出sql todo:对connector反馈一并更好控制
-    ECHO = True
+    ECHO = False
     # todo:增加logger，logger也需要控制
 
     def __init__(self):
@@ -31,7 +31,7 @@ class StockDAL:
         self.logger = logging.getLogger("jdjw_trade_dal")
         self.logger_err = logging.getLogger("jdjw_trade_dal.err")
         self.conn = mysql.connector.connect(
-            host='www.jdjw.org', user='jdjw', passwd='10041023', database='master_db')
+            host='127.0.0.1', user='jdjw', passwd='10041023', database='master_db')
 
     def close(self):
         self.conn.close()

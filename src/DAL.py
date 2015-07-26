@@ -31,7 +31,7 @@ class StockDAL:
         self.logger = logging.getLogger("jdjw_trade_dal")
         self.logger_err = logging.getLogger("jdjw_trade_dal.err")
         self.conn = mysql.connector.connect(
-            host='127.0.0.1', user='jdjw', passwd='10041023', database='master_db')
+            host='www.jdjw.org', user='jdjw', passwd='10041023', database='tradecore')
 
     def close(self):
         self.conn.close()
@@ -97,12 +97,18 @@ class StockDAL:
             self.logger_err.error(e)
 
     def select(self, sql):
-        cur = self.conn.cursor()
-        cur.execute(sql)
-        self.logger.info(sql)
-        toReturn = [i for i in cur]
-        cur.close()
-        return toReturn
+        try:
+            cur = self.conn.cursor()
+            self.logger.info(sql)
+            cur.execute(sql)
+            self.logger.info(sql)
+            toReturn = [i for i in cur]
+            cur.close()
+            return toReturn
+        except Exception as e:
+            self.logger_err.error(sql)
+            self.logger_err.error(e)
+
 
     def execute(self, sql):
         cur = self.conn.cursor()
@@ -153,4 +159,5 @@ if __name__ == '__main__':
     #a.select_from('stock', ticker="ali")
     a.delete_from('stock', ticker="uber")
     a.close()
+    print 'finished'
 

@@ -1,6 +1,10 @@
 #!usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Model class for all entries
+"""
+
 import urllib2
 import urllib
 import json

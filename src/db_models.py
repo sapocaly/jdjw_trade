@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-entries as classes
+Entries as classes
 """
 
 import urllib2
@@ -90,30 +90,55 @@ class Quote(Entry):
 
 
 class Portfolio(Entry):
-    def __init__(self):
-        pass
 
-    #def __str__(self):
-    #    return 'Portfolio Entry (%s)' % self.name
-    #__repr__ = __str__
+    table = 'portfolio'
+    fields = ['id', 'name', 'init_fund', 'strategy']
+
+    def __init__(self, **args):
+        super(Quote, self).__init__(**args)
+
+    def __str__(self):
+        return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+    __repr__ = __str__
+
+
+class Position(Entry):
+    #todo: 记录每天成绩
+    table = 'position'
+    fields = ['portfolio', 'stock', 'shares', 'avg_cost', 'total_cost']
+
+    def __init__(self, **args):
+        super(Quote, self).__init__(**args)
+
+    def __str__(self):
+        return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+    __repr__ = __str__
 
 
 class Transaction(Entry):
-    def __init__(self):
-        pass
 
-    #def __str__(self):
-    #    return 'Transaction Entry (%s)' % self['id']
-    #__repr__ = __str__
+    table = 'transaction'
+    fields = ['id', 'time', 'portfolio', 'stock', 'action', 'shares', 'price', 'total']
+
+    def __init__(self, **args):
+        super(Quote, self).__init__(**args)
+
+    def __str__(self):
+        return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+    __repr__ = __str__
 
 
 class Indicator(Entry):
-    def __init__(self):
-        pass
+    # doto: not done
+    table = 'quote'
+    fields = ['id', 'price', 'volume', 'time']
 
-    #def __str__(self):
-    #    return 'Indicator Entry (%s)' % self.ticker
-    #__repr__ = __str__
+    def __init__(self, **args):
+        super(Quote, self).__init__(**args)
+
+    def __str__(self):
+        return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+    __repr__ = __str__
 
 
 if __name__ == '__main__':

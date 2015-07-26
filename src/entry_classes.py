@@ -107,13 +107,13 @@ class Stock(Entry):
         # build query url for api
         baseurl = "https://query.yahooapis.com/v1/public/yql?"
         yql_query = "select * from yahoo.finance.quote where symbol in ('"
-        yql_query = yql_query + self.ticker + "')"
+        yql_query = yql_query + self['ticker'] + "')"
         yql_url = baseurl + urllib.urlencode({'q': yql_query}) +\
             "&format=json&diagnostics=true&env=store://datatables.org/alltableswithkeys&callback="
         # get data
         result = urllib2.urlopen(yql_url).read()
         data = json.loads(result)
-        self['name'] = data['query']['results']['quote']['Name']
+        self['name'] = data['query']['results']['quote']['Name'][:20]
         self['exchange'] = data['query']['results']['quote']['StockExchange']
         self['pv_close'] = unicode2int(data['query']['results']['quote']['LastTradePriceOnly'])
         self['pv_volume'] = data['query']['results']['quote']['Volume']
@@ -194,12 +194,11 @@ class Indicator(Entry):
 
 
 if __name__ == '__main__':
-    Quote.rm_after_market_quotes()
-    #ticker_list = []
-    #for ticker in ticker_list:
-    #    st = Stock(ticker=ticker)
-    #    st.add()
-    #    st = Stock.get(ticker=ticker)[0]
-    #    st.update_company_info()
+    #Quote.rm_after_market_quotes()
+    for ticker in ticker_list:
+        #st = Stock(ticker=ticker)
+        #st.add()
+        st = Stock.get(ticker=ticker)[0]
+        st.update_company_info()
 
     pass

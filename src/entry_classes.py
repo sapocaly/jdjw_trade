@@ -47,14 +47,18 @@ class Entry(dict):
     #    if key != 'dal_instance':
     #        self[key] = value
 
+    def call_dal_instance(self):
+        if self.dal_instance is None:
+            self.dal_instance = DAL.StockDAL()
+
     def add(self):
-        self.dal_instance = DAL.StockDAL()
+        self.call_dal_instance()
         self.dal_instance.insert_into(self.__class__.table, **self)
 
     # todo: 两套数据，一套用户输入一套数据库操作 (暂时不做)
     # todi: 增加时间确定
     def save(self):
-        self.dal_instance = DAL.StockDAL()
+        self.call_dal_instance()
         self.dal_instance.update(self.__class__.table, _id=self['id'], **self)
 
     @classmethod
@@ -137,7 +141,7 @@ class Quote(Entry):
                     time.weekday() == 6 or\
                     ((time.hour() > 4 or (time.hour() == 4 and time.minute() > 0))and
                      (time.hour() < 21 or (time.hour() == 21 and time.minute() < 30))):
-                quote['time'] = str(time)
+                #quote['time'] = str(time)
                 after_market_quotes.append(quote)
             Quote.rm(after_market_quotes)
 

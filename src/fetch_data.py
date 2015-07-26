@@ -22,7 +22,7 @@ def fetch_quotes():
     results = entry_classes.Stock.get()
     ticker_id_dict = {}
     for stock in results:
-        ticker_id_dict[stock.ticker] = stock.id
+        ticker_id_dict[stock['ticker']] = stock['id']
 
     # build query url for api
     baseurl = "https://query.yahooapis.com/v1/public/yql?"

@@ -34,26 +34,28 @@ class Entry(dict):
     def __init__(self, **args):
         for k in args:
             self[k] = args[k]
-        self.dal_instance = DAL.StockDAL()
+        self.dal_instance = None
 
-    def __getattr__(self, key):
-        if key != 'dal_instance':  # todo: bettwe way to 防止dal_instance进入dict，下同
-            try:
-                return self[key]
-            except KeyError:
-                raise AttributeError(r"'Entry' object has no attribute '%s'" % key)
-
-    def __setattr__(self, key, value):
-        if key != 'dal_instance':
-            self[key] = value
+    #def __getattr__(self, key):
+    #    if key != 'dal_instance':  # todo: better way to 防止dal_instance进入dict，下同
+    #        try:
+    #            return self[key]
+    #        except KeyError:
+    #            raise AttributeError(r"'Entry' object has no attribute '%s'" % key)
+#
+    #def __setattr__(self, key, value):
+    #    if key != 'dal_instance':
+    #        self[key] = value
 
     def add(self):
-        dal_instance.insert_into(self.__class__.table, **self)
+        self.dal_instance = DAL.StockDAL()
+        self.dal_instance.insert_into(self.__class__.table, **self)
 
     # todo: 两套数据，一套用户输入一套数据库操作 (暂时不做)
     # todi: 增加时间确定
     def save(self):
-        dal_instance.update(self.__class__.table, _id=self.id, **self)
+        self.dal_instance = DAL.StockDAL()
+        self.dal_instance.update(self.__class__.table, _id=self['id'], **self)
 
     @classmethod
     def get(cls, **args):
@@ -63,11 +65,16 @@ class Entry(dict):
         results = [cls(**dict(zip(cls.fields, entry))) for entry in selection]
         return results
 
+    # remove, 即可传入多个Entry也可传入list of Entry
     @classmethod
-    def rm(cls, *entries):
+    def rm(cls, *args):
         private_dal_instance = DAL.StockDAL()
-        for entry in entries:
-            private_dal_instance.delete_from(cls.table, **entry)
+        for arg in args:
+            if isinstance(arg, Entry):
+                private_dal_instance.delete_from(cls.table, **arg)
+            elif isinstance(arg, list):
+                for x in arg:
+                    private_dal_instance.delete_from(cls.table, **x)
 
 
 class Stock(Entry):
@@ -79,7 +86,7 @@ class Stock(Entry):
         super(Stock, self).__init__(**args)
 
     def __str__(self):
-        return 'Stock object (%s)' % self.ticker
+        return 'Stock object (%s)' % self['ticker']
     __repr__ = __str__
 
     # todo: 移到上面一层 （逻辑层）
@@ -99,18 +106,7 @@ class Stock(Entry):
         self['pv_close'] = unicode2int(data['query']['results']['quote']['LastTradePriceOnly'])
         self['pv_volume'] = data['query']['results']['quote']['Volume']
         # update
-        self.update()
-
-    # 语句
-    #@classmethod
-    #def get(cls, **args):
-    #    private_dal_instance = DAL.StockDAL()
-    #    results = private_dal_instance.select_from('stock', **args)
-    #    stocks = []
-    #    for entry in results:
-    #        stock = Stock(id=entry[0], ticker=entry[1], name=entry[2], exchange=entry[3], pv_close=entry[4], pv_volume=entry[5])
-    #        stocks.append(stock)
-    #    return stocks
+        self.save()
 
 
 class Quote(Entry):
@@ -122,31 +118,28 @@ class Quote(Entry):
         super(Quote, self).__init__(**args)
 
     def __str__(self):
-        return 'Quote object (ID %s: $%s)' % (self.id, self.price)
+        return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
     __repr__ = __str__
-
-    @classmethod
-    def get(**args):
-        private_dal_instance = DAL.StockDAL()
-        results = private_dal_instance.select_from('quote', **args)
-        quotes = []
-        for entry in results:
-            quote = Quote(id=entry[0], price=entry[1], volume=entry[2], time=entry[3])
-            quotes.append(quote)
-        print quotes
-        return quotes
 
     # todo: 移到逻辑层
     @classmethod
-    def rm_after_market_quotes():
-        after_market_entries = {}
+    def rm_after_market_quotes(cls):
         for quote in Quote.get():
-            if quote.time.weekday() > 4 or\
-                    (quote.time.hour() > 4 and quote.time.hour() < 21) or\
-                    (quote.time.hour() == 21 and quote.time.minute() < 30):
-                after_market_entries[(quote.id, quote.time)] = quote.time
-        for entry in after_market_entries.keys():
-            Quote.rm(id=entry[0], time=str(entry[1]))
+            time = quote['time']
+            # US East
+            #if (time.weekday() > 4) or\
+            #        ((time.hour() > 4 or (time.hour() == 4 and time.minute() > 0))and
+            #         (time.hour() < 21 or (time.hour() == 21 and time.minute() < 30))):
+            # GMT +8
+            after_market_quotes = []
+            if (time.weekday() == 0 and time.hour() < 4) or\
+                    (time.weekday() == 5 and (time.hour() > 21 or (time.hour() == 21 and time.minute() >= 30))) or\
+                    time.weekday() == 6 or\
+                    ((time.hour() > 4 or (time.hour() == 4 and time.minute() > 0))and
+                     (time.hour() < 21 or (time.hour() == 21 and time.minute() < 30))):
+                quote['time'] = str(time)
+                after_market_quotes.append(quote)
+            Quote.rm(after_market_quotes)
 
 
 class Portfolio(Entry):
@@ -167,7 +160,7 @@ class Transaction(Entry):
         pass
 
     #def __str__(self):
-    #    return 'Transaction Entry (%s)' % self.id
+    #    return 'Transaction Entry (%s)' % self['id']
     #__repr__ = __str__
 
     @classmethod
@@ -189,16 +182,12 @@ class Indicator(Entry):
 
 
 if __name__ == '__main__':
-    #Quote.rm_after_market_quotes()
-    #st = Stock(ticker='TRUE')
-    #print type(st)
-    #st.add()
-    #st.update_company_info()
+    Quote.rm_after_market_quotes()
+    #ticker_list = []
+    #for ticker in ticker_list:
+    #    st = Stock(ticker=ticker)
+    #    st.add()
+    #    st = Stock.get(ticker=ticker)[0]
+    #    st.update_company_info()
 
-    #fb.name = 'Facebook'
-    #fb.pv_close = 12345
-
-    #yoku.pv_close = '20.80'
-    #yoku.update()
-    print Stock.get(ticker='YOKU')
     pass

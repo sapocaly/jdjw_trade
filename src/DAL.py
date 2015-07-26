@@ -1,10 +1,22 @@
 # -*- coding: utf-8 -*-
 import mysql.connector
+import logging
 
 
-##todo：支持更复杂的query范围，><等
-##todo: 变量名等格式化
-##todo: 异常处理
+def sql_format(val):
+    if isinstance(val, int):
+        return str(val)
+    elif isinstance(val, float):
+        return str(val)
+    elif val == None:
+        return 'null'
+    else:
+        return "'{0}'".format(str(val))
+
+
+# todo：支持更复杂的query范围，><等
+# todo: 变量名等格式化
+# todo: 异常处理
 class StockDAL:
 
     # 控制是否输出sql todo:对connector反馈一并更好控制
@@ -14,6 +26,7 @@ class StockDAL:
     def __init__(self):
         # todo: 配置文件化
         # toda: 线程管理，资源管理
+        #self.logger = logging.getLogger("jdjw_trade_dal")
         self.conn = mysql.connector.connect(
             host='www.jdjw.org', user='jdjw', passwd='10041023', database='master_db')
 
@@ -21,8 +34,7 @@ class StockDAL:
         try:
             cursor = self.conn.cursor()
             keys = args.keys()
-            values = ["'{0}'".format(args[key]) if isinstance(args[key], basestring) else (
-                str(args[key]) if args[key] != None else 'null') for key in keys]
+            values = [sql_format(args[key]) for key in keys]
             sql = "insert into {0} ({1})values({2})".format(
                 table_name, ",".join(keys), ",".join(values))
             if StockDAL.ECHO:
@@ -37,8 +49,7 @@ class StockDAL:
             if len(args) > 0:
                 sql = "select * from {0} where ".format(table_name)
                 for key in args:
-                    sql += "{0} = {1} and ".format(key, "'{0}'".format(args[key]) if isinstance(
-                        args[key], basestring) else (str(args[key]) if args[key] != None else 'null'))
+                    sql += "{0} = {1} and ".format(key, sql_format(args[key]))
                 sql = sql[:-5]
             else:
                 sql = "select * from " + table_name
@@ -58,8 +69,7 @@ class StockDAL:
             if len(args) > 0:
                 sql = "delete from {0} where ".format(table_name)
                 for key in args:
-                    sql += "{0} = {1} and ".format(key, "'{0}'".format(args[key]) if isinstance(
-                        args[key], basestring) else (str(args[key]) if args[key] != None else 'null'))
+                    sql += "{0} = {1} and ".format(key, sql_format(args[key]))
                 sql = sql[:-5]
             else:
                 sql = "select * from " + table_name
@@ -90,8 +100,7 @@ class StockDAL:
             update_keys = filter(lambda x: x[0] != '_', keys)
             query_keys = list(map(lambda x: x[1:], query_keys))
             for key in keys:
-                args[key] = "'{0}'".format(args[key]) if isinstance(
-                    args[key], basestring) else (str(args[key]) if args[key] != None else 'null')
+                args[key] = sql_format(args[key])
             where_clause = ''
             if len(query_keys) != 0:
                 where_clause = 'where '
@@ -119,6 +128,6 @@ if __name__ == '__main__':
     for i in range(10):
         l.append(StockDAL())
     a = StockDAL()
-    #a.insert_into('stock_list', ticker="uber", name=None, age =3)
-    #a.select_from('stock_list', ticker="ali")
-    a.delete_from('stock_list', Aticker="YHOO")
+    a.insert_into('stock', ticker="uber", name=None)
+    #a.select_from('stock', ticker="ali")
+    a.delete_from('stock', ticker="uber")

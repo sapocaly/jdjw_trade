@@ -15,7 +15,7 @@ CREATE TABLE `quote` (
 
 CREATE TABLE `stock` (
   `id` tinyint(4) NOT NULL AUTO_INCREMENT,
-  `tiker` char(5) NOT NULL,
+  `ticker` char(5) NOT NULL,
   `name` varchar(20) DEFAULT NULL,
   `exchange` varchar(8) DEFAULT NULL,
   `pv_close` int(11) DEFAULT NULL,

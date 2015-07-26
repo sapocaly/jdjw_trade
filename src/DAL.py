@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import mysql.connector
 import logging
+import logging.config
 
 
 def sql_format(val):
@@ -26,7 +27,9 @@ class StockDAL:
     def __init__(self):
         # todo: 配置文件化
         # toda: 线程管理，资源管理
-        #self.logger = logging.getLogger("jdjw_trade_dal")
+        logging.config.fileConfig("jdjw_trade_logger.cfg")
+        self.logger = logging.getLogger("jdjw_trade_dal")
+        self.logger_err = logging.getLogger("jdjw_trade_dal.err")
         self.conn = mysql.connector.connect(
             host='www.jdjw.org', user='jdjw', passwd='10041023', database='master_db')
 
@@ -39,10 +42,12 @@ class StockDAL:
                 table_name, ",".join(keys), ",".join(values))
             if StockDAL.ECHO:
                 print sql
+            self.logger.info(sql)
             cursor.execute(sql)
             self.conn.commit()
         except Exception as e:
             print e
+            self.logger_err.error(e)
 
     def select_from(self, table_name, **args):
         try:
@@ -55,6 +60,7 @@ class StockDAL:
                 sql = "select * from " + table_name
             if StockDAL.ECHO:
                 print sql
+            self.logger.info(sql)
             cur = self.conn.cursor()
             cur.execute(sql)
             toReturn = [i for i in cur]
@@ -63,6 +69,7 @@ class StockDAL:
             return toReturn
         except Exception as e:
             print e
+            self.logger_err.error(e)
 
     def delete_from(self, table_name, **args):
         try:
@@ -75,21 +82,25 @@ class StockDAL:
                 sql = "select * from " + table_name
             if StockDAL.ECHO:
                 print sql
+            self.logger.info(sql)
             cur = self.conn.cursor()
             cur.execute(sql)
             self.conn.commit()
         except Exception as e:
             print e
+            self.logger_err.error(e)
 
     def select(self, sql):
         cur = self.conn.cursor()
         cur.execute(sql)
+        self.logger.info(sql)
         toReturn = [i for i in cur]
         return toReturn
 
     def execute(self, sql):
         cur = self.conn.cursor()
         cur.execute(sql)
+        self.logger.info(sql)
         self.conn.commit()
 
     def update(self, table_name, **args):
@@ -112,22 +123,23 @@ class StockDAL:
             for key in update_keys:
                 update_clause += "{0} = {1}, ".format(key, args[key])
             update_clause = update_clause[:-2]
-            print update_clause
             sql = "update {0} set {1} {2}".format(
                 table_name, update_clause, where_clause)
             if StockDAL.ECHO:
                 print sql
+            self.logger.info(sql)
             cur.execute(sql)
             self.conn.commit()
         except Exception as e:
             print e
+            self.logger_err.error(e)
+
 
 
 if __name__ == '__main__':
-    l = []
-    for i in range(10):
-        l.append(StockDAL())
     a = StockDAL()
     a.insert_into('stock', ticker="uber", name=None)
+    a.insert_into('stock', aticker="uber", name=None)
     #a.select_from('stock', ticker="ali")
     a.delete_from('stock', ticker="uber")
+

@@ -33,6 +33,9 @@ class StockDAL:
         self.conn = mysql.connector.connect(
             host='www.jdjw.org', user='jdjw', passwd='10041023', database='master_db')
 
+    def close(self):
+        self.conn.close()
+
     def insert_into(self, table_name, **args):
         try:
             cursor = self.conn.cursor()
@@ -142,4 +145,5 @@ if __name__ == '__main__':
     a.insert_into('stock', aticker="uber", name=None)
     #a.select_from('stock', ticker="ali")
     a.delete_from('stock', ticker="uber")
+    a.close()
 

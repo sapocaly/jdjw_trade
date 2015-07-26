@@ -2,6 +2,7 @@
 import mysql.connector
 import logging
 import logging.config
+import DBconfig
 
 
 def sql_format(val):
@@ -14,6 +15,8 @@ def sql_format(val):
     else:
         return "'{0}'".format(str(val))
 
+logging.config.fileConfig("../conf/jdjw_trade_logger.cfg")
+
 
 # todo：支持更复杂的query范围，><等
 # todo: 变量名等格式化
@@ -21,17 +24,18 @@ def sql_format(val):
 class StockDAL:
 
     # 控制是否输出sql todo:对connector反馈一并更好控制
-    ECHO = False
+    ECHO = True
     # todo:增加logger，logger也需要控制
+
+    config = DBconfig.DBConfig("../conf/jdjw_trade_db.cfg")
 
     def __init__(self):
         # todo: 配置文件化
         # toda: 线程管理，资源管理
-        logging.config.fileConfig("jdjw_trade_logger.cfg")
         self.logger = logging.getLogger("jdjw_trade_dal")
         self.logger_err = logging.getLogger("jdjw_trade_dal.err")
         self.conn = mysql.connector.connect(
-            host='127.0.0.1', user='jdjw', passwd='10041023', database='master_db')
+            host=self.config.DB_HOST, user=self.config.DB_USER, passwd=self.config.DB_PASSWORD, database=self.config.DB_NAME)
 
     def close(self):
         self.conn.close()
@@ -43,15 +47,10 @@ class StockDAL:
             values = [sql_format(args[key]) for key in keys]
             sql = "insert into {0} ({1})values({2})".format(
                 table_name, ",".join(keys), ",".join(values))
-            if StockDAL.ECHO:
-                print sql
-            self.logger.info(sql)
-            cursor.execute(sql)
-            self.conn.commit()
-            cursor.close()
+            self.execute(sql)
         except Exception as e:
             print e
-            self.logger_err.error(e)
+            self.logger_err.exception(str(e))
 
     def select_from(self, table_name, **args):
         try:
@@ -62,19 +61,11 @@ class StockDAL:
                 sql = sql[:-5]
             else:
                 sql = "select * from " + table_name
-            if StockDAL.ECHO:
-                print sql
-            self.logger.info(sql)
-            cur = self.conn.cursor()
-            cur.execute(sql)
-            toReturn = [i for i in cur]
-            cur.close()
-            if StockDAL.ECHO:
-                print toReturn
-            return toReturn
+
+            return self.select(sql)
         except Exception as e:
             print e
-            self.logger_err.error(e)
+            self.logger_err.exception(str(e))
 
     def delete_from(self, table_name, **args):
         try:
@@ -85,32 +76,10 @@ class StockDAL:
                 sql = sql[:-5]
             else:
                 sql = "select * from " + table_name
-            if StockDAL.ECHO:
-                print sql
-            self.logger.info(sql)
-            cur = self.conn.cursor()
-            cur.execute(sql)
-            self.conn.commit()
-            cur.close()
+            self.execute(sql)
         except Exception as e:
             print e
-            self.logger_err.error(e)
-
-    def select(self, sql):
-        cur = self.conn.cursor()
-        cur.execute(sql)
-        self.logger.info(sql)
-        toReturn = [i for i in cur]
-        cur.close()
-        return toReturn
-
-    def execute(self, sql):
-        cur = self.conn.cursor()
-        cur.execute(sql)
-        self.logger.info(sql)
-        self.conn.commit()
-        cur.close()
-
+            self.logger_err.exception(str(e))
 
     def update(self, table_name, **args):
         try:
@@ -134,23 +103,47 @@ class StockDAL:
             update_clause = update_clause[:-2]
             sql = "update {0} set {1} {2}".format(
                 table_name, update_clause, where_clause)
+            self.execute(sql)
+        except Exception as e:
+            print e
+            self.logger_err.exception(str(e))
+
+    def select(self, sql):
+        try:
             if StockDAL.ECHO:
                 print sql
+            cur = self.conn.cursor()
+            cur.execute(sql)
+            toReturn = [i for i in cur]
+            cur.close()
             self.logger.info(sql)
+            if StockDAL.ECHO:
+                print toReturn
+            return toReturn
+        except Exception as e:
+            print e
+            self.logger_err.error(sql)
+            self.logger_err.exception(str(e))
+
+    def execute(self, sql):
+        try:
+            if StockDAL.ECHO:
+                print sql
+            cur = self.conn.cursor()
             cur.execute(sql)
             self.conn.commit()
             cur.close()
+            self.logger.info(sql)
         except Exception as e:
             print e
-            self.logger_err.error(e)
-
-
+            self.logger_err.error(sql)
+            self.logger_err.exception(str(e))
 
 if __name__ == '__main__':
     a = StockDAL()
     a.insert_into('stock', ticker="uber", name=None)
     a.insert_into('stock', aticker="uber", name=None)
-    #a.select_from('stock', ticker="ali")
-    a.delete_from('stock', ticker="uber")
+    a.update('stock', _ticker="uber", name="优步")
+    a.select_from('stock', ticker="ali")
     a.close()
-
+    print 'finished'

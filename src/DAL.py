@@ -41,7 +41,12 @@ class StockDAL:
             database=self.config.DB_NAME)
 
     def close(self):
-        self.conn.close()
+        try:
+            self.conn.close()
+        except Exception as e:
+            print e
+            self.logger_err.exception(str(e))
+
 
     def insert_into(self, table_name, **args):
         try:
@@ -112,13 +117,12 @@ class StockDAL:
             self.logger_err.exception(str(e))
 
     def select(self, sql):
+        cur = self.conn.cursor()
         try:
             if StockDAL.ECHO:
                 print sql
-            cur = self.conn.cursor()
             cur.execute(sql)
             toReturn = [i for i in cur]
-            cur.close()
             self.logger.info(sql)
             if StockDAL.ECHO:
                 print toReturn
@@ -127,20 +131,23 @@ class StockDAL:
             print e
             self.logger_err.error(sql)
             self.logger_err.exception(str(e))
+        cur.close()
 
     def execute(self, sql):
+        ##这块要研究下
+        cur = self.conn.cursor()
         try:
             if StockDAL.ECHO:
                 print sql
-            cur = self.conn.cursor()
             cur.execute(sql)
+            #坑？？
             self.conn.commit()
-            cur.close()
             self.logger.info(sql)
         except Exception as e:
             print e
             self.logger_err.error(sql)
             self.logger_err.exception(str(e))
+        cur.close()
 
 
 if __name__ == '__main__':

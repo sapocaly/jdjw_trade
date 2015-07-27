@@ -74,39 +74,5 @@ def fetch_quotes(ticker_id_dict):
 
 if __name__ == '__main__':
     StockDAL.ECHO = False
-    #ticker_dict = get_stock_list()
-    ticker_dict = {
-        'YHOO'  :  1,
-        'GOOGL' :  2,
-        'AAPL'  :  3,
-        'FB'    :  4,
-        'TWTR'  :  5,
-        'YOKU'  :  6,
-        'BABA'  :  7,
-        'TRUE'  :  8,
-        'JAZZ'  :  9,
-        'BITA'  : 10,
-        'GRPN'  : 11,
-        'LNKD'  : 12,
-        'WX'    : 13,
-        'TSLA'  : 14,
-        'FLT'   : 15,
-        'GMCR'  : 16,
-        'PCLN'  : 17,
-        'CMG'   : 18,
-        'PANW'  : 19,
-        'KORS'  : 20,
-        'SOHU'  : 21,
-        'SFUN'  : 22,
-        'QIHU'  : 23,
-        'JD'    : 24,
-        'WUBA'  : 25,
-        'LEJU'  : 26,
-        'XNET'  : 27,
-        'NTES'  : 28,
-        'WB'    : 29,
-        'EDU'   : 30,
-        'JRJC'  : 31,
-        'DDD'   : 32,
-        }
+    ticker_dict = get_stock_list()
     fetch_quotes(ticker_dict)

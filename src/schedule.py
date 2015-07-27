@@ -17,4 +17,4 @@ def timming_exe(cmd, inc=60):
     schedule.run()
 
 
-timming_exe("python fetch_data.py &", 1)
+timming_exe("python fetch_data.py &", 5)

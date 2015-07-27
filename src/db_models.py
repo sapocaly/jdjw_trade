@@ -34,7 +34,7 @@ class Stock(Entry):
         super(Stock, self).__init__(**args)
 
     def __str__(self):
-        return 'Stock object (%s)' % self['ticker']
+        return 'Stock object (ID %s: %s)' % (self['id'], self['ticker'])
     __repr__ = __str__
 
     # todo: 移到上面一层 （逻辑层）
@@ -66,7 +66,7 @@ class Quote(Entry):
         super(Quote, self).__init__(**args)
 
     def __str__(self):
-        return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+        return 'Quote object (ID %s @ %s)' % (self['id'], self['time'])
     __repr__ = __str__
 
     # todo: 移到逻辑层

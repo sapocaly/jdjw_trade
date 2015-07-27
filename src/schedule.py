@@ -3,18 +3,20 @@
 import time
 import os
 import sched
+import datetime
 
 schedule = sched.scheduler(time.time, time.sleep)
 
 
-def perform_command(cmd, inc):
-    schedule.enter(inc, 0, perform_command, (cmd, inc))
-    os.system(cmd)
+def perform_command():
+    ##do something
+    os.system("python fetch_data.py &")
+    now =  datetime.datetime.now()
+    delta = (1000000 - now.microsecond) / 1000000.0
+    schedule.enter(delta, 0, perform_command, ())
 
 
-def timming_exe(cmd, inc=60):
-    schedule.enter(inc, 0, perform_command, (cmd, inc))
-    schedule.run()
 
 
-timming_exe("python fetch_data.py &", 5)
+schedule.enter(1, 0, perform_command, ())
+schedule.run()

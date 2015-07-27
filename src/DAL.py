@@ -26,7 +26,7 @@ logging.config.fileConfig("../conf/jdjw_trade_logger.cfg")
 # todo: 异常处理
 class StockDAL:
     # 控制是否输出sql todo:对connector反馈一并更好控制
-    ECHO = True
+    ECHO = False
     # todo:增加logger，logger也需要控制
 
     config = DBconfig.DBConfig("../conf/jdjw_trade_db.cfg")

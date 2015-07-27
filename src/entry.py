@@ -13,22 +13,24 @@ class Entry(dict):
 
     table = None
     fields = None
+    index = None
 
     # get key, vales from **args
     def __init__(self, **args):
         super(Entry, self).__init__(**args)
 
+    # todo: 两套数据，一套用户输入一套数据库操作 (暂时不做)
     def save(self):
         dal_instance = StockDAL()
         try:
-            dal_instance.update(cls.table, _id=x['id'], **self)
+            dal_instance.update(self.__class__.table, _id=x['id'], **self)
         except Exception as e:
             print 'Saving failed: ', str(self),  e
         finally:
             dal_instance.close()
 
     @classmethod
-    def get(cls, **args):
+    def search(cls, **args):
         dal_instance = StockDAL()
         try:
             selection = dal_instance.select_from(cls.table, **args)
@@ -38,7 +40,7 @@ class Entry(dict):
             print 'Getting failed: ', str(args), e
         finally:
             dal_instance.close()
-        return results
+            return results
 
     @classmethod
     def add(cls, lst):
@@ -49,7 +51,6 @@ class Entry(dict):
             except Exception as e:
                 print 'Adding failed: ', str(entry), e
         dal_instance.close()
-    # todo: 两套数据，一套用户输入一套数据库操作 (暂时不做)
 
     # remove, 即可传入多个Entry也可传入list of Entry
     @classmethod

@@ -35,7 +35,7 @@ def chop_microseconds(time):
 def get_stock_list():
 
     # read from db
-    results = db_models.Stock.get()
+    results = db_models.Stock.search()
     ticker_id_dict = {}
     for stock in results:
         ticker_id_dict[stock['ticker']] = stock['id']

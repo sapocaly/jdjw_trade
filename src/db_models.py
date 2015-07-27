@@ -15,9 +15,7 @@ from DAL import StockDAL
 
 # unicode to integer (unit: cent)
 def unicode2int(unicode_str):
-    tmp = unicode_str.replace('.', '')
-    int_num = int(tmp)
-    return int_num
+    return int(float(unicode_str)*100)
 
 
 def int2float(int_num):
@@ -61,6 +59,7 @@ class Quote(Entry):
 
     table = 'quote'
     fields = ['id', 'price', 'volume', 'time']
+    index = ['id', 'time']
 
     def __init__(self, **args):
         super(Quote, self).__init__(**args)
@@ -94,9 +93,10 @@ class Portfolio(Entry):
 
     table = 'portfolio'
     fields = ['id', 'name', 'init_fund', 'strategy']
+    index = ['id']
 
     def __init__(self, **args):
-        super(Quote, self).__init__(**args)
+        super(Portfolio, self).__init__(**args)
 
     def __str__(self):
         return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
@@ -107,9 +107,10 @@ class Position(Entry):
     #todo: 记录每天成绩
     table = 'position'
     fields = ['portfolio', 'stock', 'shares', 'avg_cost', 'total_cost']
+    index = ['portfolio', 'stock']
 
     def __init__(self, **args):
-        super(Quote, self).__init__(**args)
+        super(Position, self).__init__(**args)
 
     def __str__(self):
         return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
@@ -120,9 +121,10 @@ class Transaction(Entry):
 
     table = 'transaction'
     fields = ['id', 'time', 'portfolio', 'stock', 'action', 'shares', 'price', 'total']
+    index = ['id']
 
     def __init__(self, **args):
-        super(Quote, self).__init__(**args)
+        super(Transaction, self).__init__(**args)
 
     def __str__(self):
         return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
@@ -132,10 +134,11 @@ class Transaction(Entry):
 class Indicator(Entry):
     # doto: not done
     table = 'quote'
-    fields = ['id', 'price', 'volume', 'time']
+    fields = ['stock', 'time', '%change', 'MACD_5', 'KDJ', 'Boll']
+    index = ['stock', 'time']
 
     def __init__(self, **args):
-        super(Quote, self).__init__(**args)
+        super(Indicator, self).__init__(**args)
 
     def __str__(self):
         return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
@@ -148,12 +151,9 @@ if __name__ == '__main__':
     #for ticker in ticker_list:
     #    st = Stock(ticker=ticker)
     #    st.add()
-    #    st = Stock.get(ticker=ticker)[0]
+    #    st = Stock.search(ticker=ticker)[0]
     #    st.update_company_info()
-    #st = Stock(ticker='DDD')
-    #q = Quote(id='1', price='321', volume='312', time='2015-7-11 11:11:11')
-    #Entry.batch_add(st, q)
-    st = Stock.get(ticker='DDD')[0]
+    st = Stock.search(ticker='DDD')[0]
     st.update_company_info()
 
     pass

@@ -1,3 +1,12 @@
+CREATE TABLE `stock` (
+  `id` tinyint(4) unsigned NOT NULL AUTO_INCREMENT,
+  `ticker` char(5) NOT NULL,
+  `name` varchar(20) DEFAULT NULL,
+  `exchange` varchar(8) DEFAULT NULL,
+  `pv_close` int(11) DEFAULT NULL,
+  `pv_volume` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
@@ -9,16 +18,4 @@ CREATE TABLE `quote` (
   PRIMARY KEY (`time`,`id`),
   KEY `id` (`id`),
   CONSTRAINT `stock_data_ibfk_1` FOREIGN KEY (`id`) REFERENCES `stock` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
-CREATE TABLE `stock` (
-  `id` tinyint(4) unsigned NOT NULL AUTO_INCREMENT,
-  `ticker` char(5) NOT NULL,
-  `name` varchar(20) DEFAULT NULL,
-  `exchange` varchar(8) DEFAULT NULL,
-  `pv_close` int(11) DEFAULT NULL,
-  `pv_volume` int(11) DEFAULT NULL,
-  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

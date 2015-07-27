@@ -28,6 +28,7 @@ class Stock(Entry):
 
     table = 'stock'  # table name is stock
     fields = ['id', 'ticker', 'name', 'exchange', 'pv_close', 'pv_volume']
+    index = ['id']
 
     def __init__(self, **args):
         super(Stock, self).__init__(**args)
@@ -75,15 +76,15 @@ class Quote(Entry):
             time = quote['time']
             # US East
             #if (time.weekday() > 4) or\
-            #        ((time.hour() > 4 or (time.hour() == 4 and time.minute() > 0))and
-            #         (time.hour() < 21 or (time.hour() == 21 and time.minute() < 30))):
+            #        ((time.hour > 4 or (time.hour == 4 and time.minute > 0))and
+            #         (time.hour < 21 or (time.hour == 21 and time.minute < 30))):
             # GMT +8
             after_market_quotes = []
-            if (time.weekday() == 0 and time.hour() < 4) or\
-                    (time.weekday() == 5 and (time.hour() > 21 or (time.hour() == 21 and time.minute() >= 30))) or\
+            if (time.weekday() == 0 and time.hour < 4) or\
+                    (time.weekday() == 5 and (time.hour > 21 or (time.hour == 21 and time.minute >= 30))) or\
                     time.weekday() == 6 or\
-                    ((time.hour() > 4 or (time.hour() == 4 and time.minute() > 0))and
-                     (time.hour() < 21 or (time.hour() == 21 and time.minute() < 30))):
+                    ((time.hour > 4 or (time.hour == 4 and time.minute > 0))and
+                     (time.hour < 21 or (time.hour == 21 and time.minute < 30))):
                 #quote['time'] = str(time)
                 after_market_quotes.append(quote)
             Quote.rm(after_market_quotes)
@@ -149,5 +150,10 @@ if __name__ == '__main__':
     #    st.add()
     #    st = Stock.get(ticker=ticker)[0]
     #    st.update_company_info()
+    #st = Stock(ticker='DDD')
+    #q = Quote(id='1', price='321', volume='312', time='2015-7-11 11:11:11')
+    #Entry.batch_add(st, q)
+    st = Stock.get(ticker='DDD')[0]
+    st.update_company_info()
 
     pass

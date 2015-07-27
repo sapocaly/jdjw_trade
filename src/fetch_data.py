@@ -46,7 +46,7 @@ def get_stock_list():
 def fetch_quotes(ticker_id_dict):
 
     # timestamp
-    fetch_time = datetime.datetime.now()
+    fetch_time = chop_microseconds(datetime.datetime.now())
 
     # build query url for api
     baseurl = "https://query.yahooapis.com/v1/public/yql?"
@@ -69,8 +69,7 @@ def fetch_quotes(ticker_id_dict):
               for q in quote_data]
 
     # write results into db
-    for q in quotes:
-        q.add()
+    db_models.Quote.add(quotes)
 
 
 if __name__ == '__main__':

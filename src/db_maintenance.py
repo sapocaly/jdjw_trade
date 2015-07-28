@@ -62,34 +62,34 @@ def update_company_info():
     data = json.loads(result)
     quote_data = data['query']['results']['quote']
     for q in quote_data:
-        st = db_models.Stock.search(ticker=q['symbol'])[0]
-        st['name'] = q['Name'][:20]
-        st['exchange'] = q['StockExchange']
-        st['pv_close'] = unicode2int(q['LastTradePriceOnly'])
-        st['pv_volume'] = q['Volume']
-        st.save()
+        stock = db_models.Stock.search(ticker=q['symbol'])[0]
+        stock['name'] = q['Name'][:20]
+        stock['exchange'] = q['StockExchange']
+        stock['pv_close'] = unicode2int(q['LastTradePriceOnly'])
+        stock['pv_volume'] = q['Volume']
+        stock.save()
 
 
-# todo sql, count(*), order by time
-def check_data():
+def check_data_integrity():
     dal_instance = StockDAL()
     stocks = dal_instance.select('select count(*) from stock')[0][0]
     timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
     print "Total: %d distinct timestamps, should have %d stocks." % (len(timestamps), stocks)
     incomplete_count = 0
-    for t in timestamps:
-        if t[0] != len(db_models.Stock.search()):
+    for stamp in timestamps:
+        if stamp[0] != stocks:
             incomplete_count += 1
-            print 'Incomplete quote %d at %s: %d stocks' % (incomplete_count, t[1], t[0])
-    quote_skip = 0
-    for t in range(1, len(timestamps)):
-        if timestamps[t][1] - timestamps[t - 1][1] != datetime.timedelta(0, 1):
-            quote_skip += 1
-            print 'quote skip %s: (%s)' % (quote_skip, timestamps[t][1] - timestamps[t-1][1])
-            print timestamps[t-1][1]
-            print timestamps[t][1]
+            print 'Incomplete quote %d at %s: %d stocks' % (incomplete_count, stamp[1], stamp[0])
+    time_skip = 0
+    for i in range(1, len(timestamps)):
+        if timestamps[i][1] - timestamps[i - 1][1] != datetime.timedelta(0, 1):
+            time_skip += 1
+            print 'Time skip %s: (%s)' % (time_skip, timestamps[i][1] - timestamps[i-1][1])
+            print timestamps[i-1][1]
+            print timestamps[i][1]
+
 
 if __name__ == '__main__':
     #rm_after_market_quotes()
     update_company_info()
-    check_data()
+    check_data_integrity()

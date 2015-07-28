@@ -51,8 +51,8 @@ def fetch_quotes(ticker_id_dict):
     global logger
     global logger_alert
     # timestamp
-    fetch_time = chop_microseconds(datetime.datetime.now())
     start_time = datetime.datetime.now()
+    fetch_time = chop_microseconds(start_time)
     count = -1
     try:
         # build query url for api

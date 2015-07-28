@@ -18,12 +18,28 @@ class Entry(dict):
     # get key, vales from **args
     def __init__(self, **args):
         super(Entry, self).__init__(**args)
+        # 存一份用户不修改的信息
+        for kw in args.keys():
+            self['_' + kw] = args[kw]
 
-    # todo: 两套数据，一套用户输入一套数据库操作 (暂时不做)
+    def query_dict(self):
+        query_dict = {}
+        for key in self.keys():
+            if key[0] == '_' and self[key] != None:
+                query_dict[key] = self[key]
+        return query_dict
+
+    def working_dict(self):
+        working_dict = {}
+        for key in self.keys():
+            if key[0] != '_':
+                working_dict[key] = self[key]
+        return working_dict
+
     def save(self):
         dal_instance = StockDAL()
         try:
-            dal_instance.update(self.__class__.table, _id=x['id'], **self)
+            dal_instance.update(self.__class__.table, **dict(self.query_dict(), **self.working_dict()))
         except Exception as e:
             print 'Saving failed: ', str(self),  e
         finally:
@@ -47,7 +63,7 @@ class Entry(dict):
         dal_instance = StockDAL()
         for entry in lst:
             try:
-                dal_instance.insert_into(cls.table, **entry)
+                dal_instance.insert_into(cls.table, **entry.working_dict())
             except Exception as e:
                 print 'Adding failed: ', str(entry), e
         dal_instance.close()
@@ -58,7 +74,7 @@ class Entry(dict):
         dal_instance = StockDAL()
         for entry in lst:
             try:
-                dal_instance.delete_from(cls.table, **entry)
+                dal_instance.delete_from(cls.table, **entry.working_dict())
             except Exception as e:
                 print 'Removing failed: ', str(entry), e
         dal_instance.close()

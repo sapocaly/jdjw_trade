@@ -22,17 +22,6 @@ logger = logging.getLogger("jdjw_trade_fetch_digest")
 logger_alert = logging.getLogger("jdjw_trade_fetch_digest.alert")
 
 
-def db_time_format(string):
-    yyyy = int(string[:4])
-    MM = int(string[5:7])
-    dd = int(string[8:10])
-    hh = int(string[11:13])
-    mm = int(string[14:16])
-    ss = int(string[17:19])
-    time = datetime.datetime(yyyy, MM, dd, hh, mm, ss)
-    return time
-
-
 def chop_microseconds(time):
     return time - datetime.timedelta(microseconds=time.microsecond)
 

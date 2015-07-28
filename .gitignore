@@ -1,6 +1,6 @@
 *.pyc
 .DS_Store
 log/
-conf/
 .idea/
 nohup.out
+jdjw_trade_db.cfg

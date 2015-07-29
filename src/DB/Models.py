@@ -5,12 +5,11 @@
 Entries as classes
 """
 
-from entry import Entry
-from DAL import StockDAL
+from src.DB.Entry import Entry
+from src.DB.DAL import StockDAL
 
 
 class Stock(Entry):
-
     table = 'stock'  # table name is stock
     fields = ['id', 'ticker', 'name', 'exchange', 'pv_close', 'pv_volume']
 
@@ -19,11 +18,11 @@ class Stock(Entry):
 
     def __str__(self):
         return 'Stock object (%s)' % (self['ticker'])
+
     __repr__ = __str__
 
 
 class Quote(Entry):
-
     table = 'quote'
     fields = ['id', 'price', 'volume', 'time']
 
@@ -32,11 +31,11 @@ class Quote(Entry):
 
     def __str__(self):
         return 'Quote object (ID %s @ %s)' % (self['id'], self['time'])
+
     __repr__ = __str__
 
 
 class Portfolio(Entry):
-
     table = 'portfolio'
     fields = ['id', 'name', 'init_fund', 'strategy']
 
@@ -45,11 +44,12 @@ class Portfolio(Entry):
 
     def __str__(self):
         return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+
     __repr__ = __str__
 
 
 class Position(Entry):
-    #todo: 记录每天成绩
+    # todo: 记录每天成绩
     table = 'position'
     fields = ['portfolio', 'stock', 'shares', 'avg_cost', 'total_cost']
 
@@ -58,11 +58,11 @@ class Position(Entry):
 
     def __str__(self):
         return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+
     __repr__ = __str__
 
 
 class Transaction(Entry):
-
     table = 'transaction'
     fields = ['id', 'time', 'portfolio', 'stock', 'action', 'shares', 'price', 'total']
 
@@ -71,6 +71,7 @@ class Transaction(Entry):
 
     def __str__(self):
         return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+
     __repr__ = __str__
 
 
@@ -84,11 +85,13 @@ class Indicator(Entry):
 
     def __str__(self):
         return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+
     __repr__ = __str__
 
 
 if __name__ == '__main__':
     StockDAL.ECHO = False
+<<<<<<< HEAD:src/db_models.py
     first = Portfolio(name='MACD', strategy='MACD')
     Portfolio.add([first])
     #st = Stock(ticker='LVS')
@@ -96,5 +99,12 @@ if __name__ == '__main__':
     #st['pv_close'] = 333123
     #print st.working_dict(), st.query_dict()
     #st.save()
+=======
+    # st = Stock(ticker='LVS')
+    # Stock.add([st])
+    # st['pv_close'] = 333123
+    # print st.working_dict(), st.query_dict()
+    # st.save()
+>>>>>>> 096f2b6e2bc8420357e88d64a339e51d3b10b9c7:src/DB/Models.py
 
     pass

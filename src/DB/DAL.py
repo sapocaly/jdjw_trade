@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import logging
-import logging.config
 
 import mysql.connector
 
-import DBconfig
+import src.utils.LogConstant as LogConstant
+
+from src.utils import DBconfig
 
 
 def sql_format(val):
@@ -18,9 +18,6 @@ def sql_format(val):
         return "'{0}'".format(str(val))
 
 
-logging.config.fileConfig("../conf/jdjw_trade_logger.cfg")
-
-
 # todo：支持更复杂的query范围，><等
 # todo: 变量名等格式化
 # todo: 异常处理
@@ -29,13 +26,13 @@ class StockDAL:
     ECHO = False
     # todo:增加logger，logger也需要控制
 
-    config = DBconfig.DBConfig("../conf/jdjw_trade_db.cfg")
+    config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
 
     def __init__(self):
         # todo: 配置文件化
         # toda: 线程管理，资源管理
-        self.logger = logging.getLogger("jdjw_trade_dal")
-        self.logger_err = logging.getLogger("jdjw_trade_dal.err")
+        self.logger = LogConstant.DAL_DIGEST_LOGGER
+        self.logger_err = LogConstant.DAL_DIGEST_LOGGER_ERROR
         self.conn = mysql.connector.connect(
             host=self.config.DB_HOST, user=self.config.DB_USER, passwd=self.config.DB_PASSWORD,
             database=self.config.DB_NAME)
@@ -46,7 +43,6 @@ class StockDAL:
         except Exception as e:
             print e
             self.logger_err.exception(str(e))
-
 
     def insert_into(self, table_name, **args):
         try:
@@ -140,7 +136,7 @@ class StockDAL:
             if StockDAL.ECHO:
                 print sql
             cur.execute(sql)
-            #坑？？
+            # 坑？？
             self.conn.commit()
             self.logger.info(sql)
         except Exception as e:

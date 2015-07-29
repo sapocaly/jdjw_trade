@@ -12,14 +12,13 @@ import urllib2
 import urllib
 import json
 import datetime
-import logging
-import logging.config
 
-import db_models
+from src.DB import Models
+from src.utils.DbUtils import unicode2int
+import utils.LogConstant as LogConstant
 
-logging.config.fileConfig("../conf/jdjw_trade_logger.cfg")
-logger = logging.getLogger("jdjw_trade_fetch_digest")
-logger_alert = logging.getLogger("jdjw_trade_fetch_digest.alert")
+logger = LogConstant.FETCH_DIGEST_LOGGER
+logger_alert = LogConstant.FETCH_DIGEST_LOGGER_ALERT
 
 
 def chop_microseconds(time):
@@ -28,7 +27,7 @@ def chop_microseconds(time):
 
 def get_stock_list():
     # read from db
-    results = db_models.Stock.search()
+    results = Models.Stock.search()
     ticker_id_dict = {}
     for stock in results:
         ticker_id_dict[stock['ticker']] = stock['id']
@@ -57,14 +56,14 @@ def fetch_quotes(ticker_id_dict):
         quote_data = data['query']['results']['quote']
 
         # create objects
-        quotes = [db_models.Quote(id=ticker_id_dict[q['symbol']],
-                                  price=db_models.unicode2int(q['LastTradePriceOnly']),
-                                  volume=q['Volume'],
-                                  time=fetch_time)
+        quotes = [Models.Quote(id=ticker_id_dict[q['symbol']],
+                               price=unicode2int(q['LastTradePriceOnly']),
+                               volume=q['Volume'],
+                               time=fetch_time)
                   for q in quote_data]
         count = len(quotes)
         # write results into db
-        db_models.Quote.add(quotes)
+        Models.Quote.add(quotes)
         result = 'True'
     except Exception as e:
         result = 'False'
@@ -75,6 +74,6 @@ def fetch_quotes(ticker_id_dict):
     logger.info(log_string)
 
 
-if __name__ == '__main__':
+def run():
     ticker_dict = get_stock_list()
     fetch_quotes(ticker_dict)

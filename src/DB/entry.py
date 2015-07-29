@@ -5,12 +5,11 @@
 Model class for all entries
 """
 
-from DAL import StockDAL
+from src.DB.DAL import StockDAL
 
 
 # governing class for all entries. this is a dict
 class Entry(dict):
-
     table = None
     fields = None
     index = None
@@ -41,7 +40,7 @@ class Entry(dict):
         try:
             dal_instance.update(self.__class__.table, **dict(self.query_dict(), **self.working_dict()))
         except Exception as e:
-            print 'Saving failed: ', str(self),  e
+            print 'Saving failed: ', str(self), e
         finally:
             dal_instance.close()
 

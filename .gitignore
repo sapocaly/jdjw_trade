@@ -4,3 +4,4 @@ log/
 .idea/
 nohup.out
 jdjw_trade_db.cfg
+test.py

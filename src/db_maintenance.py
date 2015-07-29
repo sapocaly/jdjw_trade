@@ -56,7 +56,7 @@ def update_company_info():
     yql_query = yql_query + ticker_url + "')"
     yql_url = baseurl + urllib.urlencode({'q': yql_query}) + \
               "&format=json&diagnostics=true&env=store://datatables.org/alltableswithkeys&callback="
-    #print yql_url
+    print yql_url
     # get data
     result = urllib2.urlopen(yql_url).read()
     data = json.loads(result)
@@ -91,5 +91,5 @@ def check_data_integrity():
 
 if __name__ == '__main__':
     #rm_after_market_quotes()
-    update_company_info()
+    #update_company_info()
     check_data_integrity()

@@ -9,7 +9,6 @@ CREATE TABLE `stock` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
-
 CREATE TABLE `quote` (
   `id` tinyint(4) unsigned NOT NULL,
   `price` int(10) unsigned NOT NULL,
@@ -18,4 +17,14 @@ CREATE TABLE `quote` (
   PRIMARY KEY (`time`,`id`),
   KEY `id` (`id`),
   CONSTRAINT `stock_data_ibfk_1` FOREIGN KEY (`id`) REFERENCES `stock` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE `portfolio` (
+  `id` tinyint(4) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(20) DEFAULT NULL,
+  `init_fund` int(10) unsigned DEFAULT 10000000,
+  `strategy` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

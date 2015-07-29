@@ -14,15 +14,11 @@ import json
 import datetime
 
 from src.DB import Models
-from src.utils.DbUtils import unicode2int
+from src.utils.DbUtils import unicode2int, chop_microseconds
 import utils.LogConstant as LogConstant
 
 logger = LogConstant.FETCH_DIGEST_LOGGER
 logger_alert = LogConstant.FETCH_DIGEST_LOGGER_ALERT
-
-
-def chop_microseconds(time):
-    return time - datetime.timedelta(microseconds=time.microsecond)
 
 
 def get_stock_list():

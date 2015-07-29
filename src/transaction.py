@@ -4,8 +4,8 @@ Transaction module
 
 import datetime
 
-import db_models
-from fetch_data import chop_microseconds
+from src.DB import Models
+from src.utils.DbUtils import chop_microseconds
 
 
 class order_control(object):

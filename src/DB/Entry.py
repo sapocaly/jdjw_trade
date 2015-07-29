@@ -35,6 +35,7 @@ class Entry(dict):
                 working_dict[key] = self[key]
         return working_dict
 
+    # todo: 同步
     def save(self):
         dal_instance = StockDAL()
         try:

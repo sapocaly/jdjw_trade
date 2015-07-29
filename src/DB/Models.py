@@ -78,7 +78,7 @@ class Transaction(Entry):
 class Indicator(Entry):
     # doto: not done
     table = 'quote'
-    fields = ['stock', 'time', 'change', 'volume', 'moving average', 'MACD', 'KDJ', 'Boll', 'William', 'VR']
+    fields = ['stock', 'time', 'change', 'volume', 'moving average', 'MACD', 'KDJ', 'Boll', 'W&...', 'VR']
 
     def __init__(self, **args):
         super(Indicator, self).__init__(**args)

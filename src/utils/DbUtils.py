@@ -21,3 +21,7 @@ def db_time_format(string):
     ss = int(string[17:19])
     time = datetime.datetime(yyyy, MM, dd, hh, mm, ss)
     return time
+
+
+def chop_microseconds(time):
+    return time - datetime.timedelta(microseconds=time.microsecond)

@@ -4,12 +4,13 @@ Transaction module
 
 import datetime
 
-from src.DB import Models
+from src.DB.Models import *
 from src.utils.DbUtils import chop_microseconds
 
 
 class order_control(object):
     """docstring for order_control"""
+
     def __init__(self):
         pass
 
@@ -22,7 +23,7 @@ class order_control(object):
         total = price * shares - commission
         # get portfolio and stock id
         port = Portfolio.search(name=portfolio)
-        stock = Stock.search(name=)
+        stock = Stock.search(name=stock)
         # record transaction
         trans = Transaction(time=order_time, portfolio=port['id'],
                             stock=stock, action='buy', shares=shares,
@@ -32,7 +33,7 @@ class order_control(object):
         pos = Position.search(portfolio=portfolio, stock=stock)
         if pos is None:
             pos = Position(portfolio=portfolio, stock=stock, shares=shares,
-                           avg_cost=total/shares, total_cost=total)
+                           avg_cost=total / shares, total_cost=total)
             Position.add([pos])
         elif isinstance(pos[0], Position):
             pos['shares'] += shares
@@ -52,7 +53,8 @@ class order_control(object):
                                       price=price, total=total)
             pos = Position.search(portfolio=portfolio, stock=stock)
             if pos is None:
-                pos = Position(portfolio=portfolio, stock=stock, shares=shares, avg_cost=total/shares, total_cost=total)
+                pos = Position(portfolio=portfolio, stock=stock, shares=shares, avg_cost=total / shares,
+                               total_cost=total)
                 Position.add([pos])
             elif isinstance(pos[0], Position):
                 pos['shares'] += shares
@@ -66,6 +68,7 @@ class order_control(object):
             pass
         elif action == 'btc':
             pass
+
 
 if __name__ == '__main__':
     a = order_control()

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-1Model class for all entries
+Model class for all entries
 """
 
 from src.DB.DAL import StockDAL

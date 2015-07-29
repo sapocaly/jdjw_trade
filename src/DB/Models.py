@@ -91,7 +91,6 @@ class Indicator(Entry):
 
 if __name__ == '__main__':
     StockDAL.ECHO = False
-<<<<<<< HEAD:src/db_models.py
     first = Portfolio(name='MACD', strategy='MACD')
     Portfolio.add([first])
     #st = Stock(ticker='LVS')
@@ -99,12 +98,5 @@ if __name__ == '__main__':
     #st['pv_close'] = 333123
     #print st.working_dict(), st.query_dict()
     #st.save()
-=======
-    # st = Stock(ticker='LVS')
-    # Stock.add([st])
-    # st['pv_close'] = 333123
-    # print st.working_dict(), st.query_dict()
-    # st.save()
->>>>>>> 096f2b6e2bc8420357e88d64a339e51d3b10b9c7:src/DB/Models.py
 
     pass

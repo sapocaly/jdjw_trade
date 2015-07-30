@@ -1,10 +1,41 @@
 # -*- coding: utf-8 -*-
+import threading
 
 import mysql.connector
 
 import src.utils.LogConstant as LogConstant
-
 from src.utils import DBconfig
+
+config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
+
+logger = LogConstant.DAL_DIGEST_LOGGER
+logger_err = LogConstant.DAL_DIGEST_LOGGER_ERROR
+
+ECHO = False
+
+
+class Connection(threading.local):
+    def __init__(self):
+        self.conn = None
+
+    def cursor(self):
+        if not self.conn:
+            self.conn = mysql.connector.connect(host=config.DB_HOST, user=config.DB_USER, passwd=config.DB_PASSWORD,
+                                                database=config.DB_NAME)
+        return self.conn.cursor()
+
+    def commit(self):
+        self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()
+
+    def clean(self):
+        self.conn.close()
+        self.conn = None
+
+
+DB_CONNECTION = Connection()
 
 
 def sql_format(val):
@@ -16,6 +47,114 @@ def sql_format(val):
         return 'null'
     else:
         return "'{0}'".format(str(val))
+
+
+def close():
+    DB_CONNECTION.clean()
+
+
+def execute(sql):
+    cursor = DB_CONNECTION.cursor()
+    try:
+        if ECHO:
+            print sql
+        cursor.execute(sql)
+        DB_CONNECTION.commit()
+        logger.info(sql)
+    except Exception as e:
+        print e
+        logger_err.error(sql)
+        logger_err.exception(str(e))
+    cursor.close()
+
+
+def select(sql):
+    cursor = DB_CONNECTION.cursor()
+    try:
+        if StockDAL.ECHO:
+            print sql
+        cursor.execute(sql)
+        toReturn = [i for i in cursor]
+        logger.info(sql)
+        if StockDAL.ECHO:
+            print toReturn
+        return toReturn
+    except Exception as e:
+        print e
+        logger_err.error(sql)
+        logger_err.exception(str(e))
+    cursor.close()
+
+
+def insert_into(table_name, **args):
+    try:
+        cursor = DB_CONNECTION.cursor()
+        keys = args.keys()
+        values = [sql_format(args[key]) for key in keys]
+        sql = "insert into {0} ({1})values({2})".format(
+            table_name, ",".join(keys), ",".join(values))
+        execute(sql)
+    except Exception as e:
+        print e
+        logger_err.exception(str(e))
+
+
+def select_from(table_name, **args):
+    try:
+        if len(args) > 0:
+            sql = "select * from {0} where ".format(table_name)
+            for key in args:
+                sql += "{0} = {1} and ".format(key, sql_format(args[key]))
+            sql = sql[:-5]
+        else:
+            sql = "select * from " + table_name
+
+        return select(sql)
+    except Exception as e:
+        print e
+        logger_err.exception(str(e))
+
+
+def delete_from(table_name, **args):
+    try:
+        if len(args) > 0:
+            sql = "delete from {0} where ".format(table_name)
+            for key in args:
+                sql += "{0} = {1} and ".format(key, sql_format(args[key]))
+            sql = sql[:-5]
+        else:
+            sql = "select * from " + table_name
+        execute(sql)
+    except Exception as e:
+        print e
+        logger_err.exception(str(e))
+
+
+def update(table_name, **args):
+    try:
+        keys = args.keys()
+        query_keys = filter(lambda x: x[0] == '_', keys)
+        update_keys = filter(lambda x: x[0] != '_', keys)
+        query_keys = list(map(lambda x: x[1:], query_keys))
+        for key in keys:
+            args[key] = sql_format(args[key])
+        where_clause = ''
+        if len(query_keys) != 0:
+            where_clause = 'where '
+            for key in query_keys:
+                where_clause += "{0} = {1} and ".format(
+                    key, args['_' + key])
+            where_clause = where_clause[:-5]
+        update_clause = ''
+        for key in update_keys:
+            update_clause += "{0} = {1}, ".format(key, args[key])
+        update_clause = update_clause[:-2]
+        sql = "update {0} set {1} {2}".format(
+            table_name, update_clause, where_clause)
+        execute(sql)
+    except Exception as e:
+        print e
+        logger_err.exception(str(e))
 
 
 # todo：支持更复杂的query范围，><等
@@ -147,10 +286,17 @@ class StockDAL:
 
 
 if __name__ == '__main__':
+    StockDAL.ECHO = True
+    ECHO = True
     a = StockDAL()
     a.insert_into('stock', ticker="uber", name=None)
     a.insert_into('stock', aticker="uber", name=None)
     a.update('stock', _ticker="uber", name="优步")
-    a.select_from('stock', ticker="ali")
+    print a.select_from('stock', ticker="ali")
+    a.delete_from('stock', ticker='uber')
     a.close()
+    print 'finished'
+    insert_into('stock', ticker='sheng')
+    delete_from('stock', ticker="sheng", name=None)
+    close()
     print 'finished'

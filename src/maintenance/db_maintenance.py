@@ -3,7 +3,7 @@ import urllib
 import json
 import datetime
 
-from src.DB import Models
+from src.DB.Models import *
 from src.DB.DAL import StockDAL
 from src.utils.DbUtils import unicode2int
 
@@ -14,7 +14,7 @@ def rm_after_market_quotes():
     #        ((time.hour > 4 or (time.hour == 4 and time.minute > 0))and
     #         (time.hour < 21 or (time.hour == 21 and time.minute < 30))):
     after_market_quotes = []
-    for quote in Models.Quote.search():
+    for quote in Quote.search():
         time = quote['time']
         # GMT +8
         if (time.weekday() == 0 and (time.hour < 4 or (time.hour == 4 and time.minute == 0))) or \
@@ -23,11 +23,11 @@ def rm_after_market_quotes():
                 ((time.hour > 4 or (time.hour == 4 and time.minute > 0)) and
                      (time.hour < 21 or (time.hour == 21 and time.minute < 30))):
             after_market_quotes.append(quote)
-    Models.Quote.rm(after_market_quotes)
+    Quote.rm(after_market_quotes)
 
 
 def update_company_info():
-    stocks = Models.Stock.search()
+    stocks = Stock.search()
     tickers = [x['ticker'] for x in stocks]
     # get company info and stores in db
     # build query url for api
@@ -43,7 +43,7 @@ def update_company_info():
     data = json.loads(result)
     quote_data = data['query']['results']['quote']
     for q in quote_data:
-        stock = Models.Stock.search(ticker=q['symbol'])[0]
+        stock = Stock.search(ticker=q['symbol'])[0]
         stock['name'] = q['Name'][:20]
         stock['exchange'] = q['StockExchange']
         stock['pv_close'] = unicode2int(q['LastTradePriceOnly'])
@@ -73,7 +73,58 @@ def check_data_integrity(range=datetime.date.today()):
             print timestamps[i][1]
 
 
+def solve_time_skip():
+    dal_instance = StockDAL()
+    timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
+    # solve time skip
+    for i in xrange(1, len(timestamps)):
+        if timestamps[i][1] - timestamps[i - 1][1] != datetime.timedelta(0, 1):
+            if timestamps[i][1] - timestamps[i - 1][1] < datetime.timedelta(0, 60):
+                duration = (timestamps[i][1] - timestamps[i - 1][1]).seconds
+                for st in Stock.search():
+                    id = st['id']
+                    beg_quote = Quote.search(id=id, time=timestamps[i-1][1])[0]
+                    end_quote = Quote.search(id=id, time=timestamps[i][1])[0]
+                    beg_price = beg_quote['price']
+                    end_price = end_quote['price']
+                    beg_vlm = beg_quote['volume']
+                    end_vlm = end_quote['volume']
+                    for t in xrange(1, duration):
+                        time = timestamps[i-1][1] + datetime.timedelta(0, t)
+                        print time
+                        price = beg_price + (end_price - beg_price) / duration * t
+                        volume = beg_vlm + (end_vlm - beg_vlm) / duration * t
+                        quote = Quote(id=id, time=time, price=price, volume=volume)
+                        Quote.add([quote])
+                        print 'Added quote for %s at %s and at $%s, vlm %s' % (st['ticker'], time, price, volume)
+
+
+def solve_incomplete_stock():
+    """
+    this assumes that there is no time skip
+    """
+    dal_instance = StockDAL()
+    stocks = Stock.search()
+    timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
+    for i in xrange(1, len(timestamps)-1):
+        if timestamps[i][0] != len(stocks):
+            time = timestamps[i][1]
+            stocks_recorded = [quote['id'] for quote in Quote.search(time=time)]
+            stocks_complete = [st['id'] for st in Stock.search()]
+            for id in stocks_complete:
+                if id not in stocks_recorded:
+                    beg_quote = Quote.search(id=id, time=timestamps[i-1][1])[0]
+                    end_quote = Quote.search(id=id, time=timestamps[i+1][1])[0]
+                    price = (beg_quote['price'] + end_quote['price']) / 2
+                    volume = (beg_quote['volume'] + end_quote['volume']) /2
+                    quote = Quote(id=id, time=time, price=price, volume=volume)
+                    Quote.add([quote])
+                    print 'Added quote for stock ID:%s at %s and at $%s, vlm %s' % (id, time, price, volume)
+
+
 if __name__ == '__main__':
     #rm_after_market_quotes()
     #update_company_info()
-    check_data_integrity()
+    #check_data_integrity()
+    solve_time_skip()
+    solve_incomplete_stock()

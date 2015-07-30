@@ -23,7 +23,6 @@ class OrderControl(object):
         start_time = datetime.datetime.now()
         order_time = chop_microseconds(start_time)
         # do calculation
-        self.commission = 700
         total = price * shares + self.commission
         # get portfolio, cash position, and stock id
         port = Portfolio.search(name=portfolio)[0]
@@ -93,7 +92,6 @@ class OrderControl(object):
         start_time = datetime.datetime.now()
         order_time = chop_microseconds(start_time)
         # do calculation
-        self.commission = 700
         total = price * shares - self.commission
         # get portfolio, cash, and stock id
         port = Portfolio.search(name=portfolio)[0]
@@ -132,7 +130,6 @@ class OrderControl(object):
         start_time = datetime.datetime.now()
         order_time = chop_microseconds(start_time)
         # do calculation
-        self.commission = 700
         total = price * shares + self.commission
         # get portfolio, cash, and stock id
         port = Portfolio.search(name=portfolio)[0]

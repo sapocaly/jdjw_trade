@@ -13,7 +13,7 @@ class iCalculator():
     def __init__(self):
         pass
 
-    def ma(self, m, n):
+    def ma(self, period, scale=1):
         pass
 
     def macd(self, n):

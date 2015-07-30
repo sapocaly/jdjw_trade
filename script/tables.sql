@@ -28,3 +28,27 @@ CREATE TABLE `portfolio` (
   PRIMARY KEY (`id`),
   KEY `id` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE `position` (
+  `portfolio` tinyint(4) unsigned NOT NULL,
+  `stock` tinyint(4) unsigned NOT NULL,
+  `shares` int(10) NOT NULL,
+  `avg_cost` int(10),
+  `total_cost` int(10) NOT NULL,
+  `aggr_cost` int(10),
+  PRIMARY KEY (`portfolio`, `stock`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE `transaction` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `portfolio` tinyint(4) unsigned NOT NULL,
+  `stock` tinyint(4) unsigned NOT NULL,
+  `action` char(5) NOT NULL,
+  `shares` int(10) NOT NULL,
+  `price` int(10) unsigned NOT NULL,
+  `total` int(10) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

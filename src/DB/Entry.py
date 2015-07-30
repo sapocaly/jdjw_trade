@@ -21,14 +21,14 @@ class Entry(dict):
         for kw in args.keys():
             self['_' + kw] = args[kw]
 
-    def query_dict(self):
+    def _query_dict(self):
         query_dict = {}
         for key in self.keys():
             if key[0] == '_' and self[key] != None:
                 query_dict[key] = self[key]
         return query_dict
 
-    def working_dict(self):
+    def _working_dict(self):
         working_dict = {}
         for key in self.keys():
             if key[0] != '_':
@@ -39,7 +39,7 @@ class Entry(dict):
     def save(self):
         dal_instance = StockDAL()
         try:
-            dal_instance.update(self.__class__.table, **dict(self.query_dict(), **self.working_dict()))
+            dal_instance.update(self.__class__.table, **dict(self._query_dict(), **self._working_dict()))
         except Exception as e:
             print 'Saving failed: ', str(self), e
         finally:
@@ -63,7 +63,7 @@ class Entry(dict):
         dal_instance = StockDAL()
         for entry in lst:
             try:
-                dal_instance.insert_into(cls.table, **entry.working_dict())
+                dal_instance.insert_into(cls.table, **entry._working_dict())
             except Exception as e:
                 print 'Adding failed: ', str(entry), e
         dal_instance.close()
@@ -74,7 +74,7 @@ class Entry(dict):
         dal_instance = StockDAL()
         for entry in lst:
             try:
-                dal_instance.delete_from(cls.table, **entry.working_dict())
+                dal_instance.delete_from(cls.table, **entry._working_dict())
             except Exception as e:
                 print 'Removing failed: ', str(entry), e
         dal_instance.close()

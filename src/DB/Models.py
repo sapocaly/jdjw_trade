@@ -43,7 +43,20 @@ class Portfolio(Entry):
         super(Portfolio, self).__init__(**args)
 
     def __str__(self):
-        return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+        return 'Portfolio object (ID %s)' % self['id']
+
+    __repr__ = __str__
+
+
+class Scoreboard(Entry):
+    table = 'scoreboard'
+    fields = ['portfolio', 'date', 'balance']
+
+    def __init__(self, **args):
+        super(Scoreboard, self).__init__(**args)
+
+    def __str__(self):
+        return 'Scoreboard object (Portfolio %s)' % self['portfolio']
 
     __repr__ = __str__
 
@@ -51,26 +64,26 @@ class Portfolio(Entry):
 class Position(Entry):
     # todo: 记录每天成绩
     table = 'position'
-    fields = ['portfolio', 'stock', 'shares', 'avg_cost', 'total_cost']
+    fields = ['portfolio', 'stock', 'shares', 'avg_cost', 'total_cost', 'aggr_cost']
 
     def __init__(self, **args):
         super(Position, self).__init__(**args)
 
     def __str__(self):
-        return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+        return 'Position object (Portfolio %s, Stock %s)' % (self['portfolio'], self['stock'])
 
     __repr__ = __str__
 
 
 class Transaction(Entry):
     table = 'transaction'
-    fields = ['id', 'time', 'portfolio', 'stock', 'action', 'shares', 'price', 'total']
+    fields = ['id', 'time', 'position', 'action', 'shares', 'price', 'total']
 
     def __init__(self, **args):
         super(Transaction, self).__init__(**args)
 
     def __str__(self):
-        return 'Quote object (ID %s: $%s)' % (self['id'], self['price'])
+        return 'Transaction object (ID: %s)' % self['id']
 
     __repr__ = __str__
 
@@ -91,8 +104,8 @@ class Indicator(Entry):
 
 if __name__ == '__main__':
     StockDAL.ECHO = False
-    first = Portfolio(name='MACD', strategy='MACD')
-    Portfolio.add([first])
+    #first = Portfolio(name='MACD', strategy='MACD')
+    #Portfolio.add([first])
     #st = Stock(ticker='LVS')
     #Stock.add([st])
     #st['pv_close'] = 333123

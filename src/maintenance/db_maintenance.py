@@ -51,10 +51,13 @@ def update_company_info():
         stock.save()
 
 
-def check_data_integrity():
+def check_data_integrity(range=datetime.date.today()):
     dal_instance = StockDAL()
     stocks = dal_instance.select('select count(*) from stock')[0][0]
-    timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
+    if range == datetime.date.today():
+        timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
+    else:
+        timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
     print "Total: %d distinct timestamps, should have %d stocks." % (len(timestamps), stocks)
     incomplete_count = 0
     for stamp in timestamps:

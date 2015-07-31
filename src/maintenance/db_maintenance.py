@@ -8,7 +8,6 @@ from src.DB.DAL import StockDAL
 from src.utils.DbUtils import unicode2int
 
 
-# todo: update
 def rm_after_market_quotes():
     ## US East
     # sql = 'SELECT * from quote where ' +\
@@ -23,6 +22,7 @@ def rm_after_market_quotes():
           '(extract(hour_second from time) > 40000 and ' + \
           'extract(hour_second from time) < 213000)'
     records = dal_instance.select(sql)
+    dal_instance.close()
     after_market_quotes = [Quote(id=quo[0], price=quo[1], volume=quo[2], time=quo[3]) for quo in records]
     if after_market_quotes != []:
         print 'After market quotes retrieved. Removing...'
@@ -58,6 +58,7 @@ def check_data_integrity():
     dal_instance = StockDAL()
     stocks = dal_instance.select('select count(*) from stock')[0][0]
     timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
+    dal_instance.close()
     print "Total: %d distinct timestamps, should have %d stocks." % (len(timestamps), stocks)
     incomplete_count = 0
     for stamp in timestamps:
@@ -79,6 +80,7 @@ def solve_time_skip():
     """
     dal_instance = StockDAL()
     timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
+    dal_instance.close()
     # solve time skip
     for i in xrange(1, len(timestamps)):
         if timestamps[i][1] - timestamps[i - 1][1] != datetime.timedelta(0, 1):
@@ -109,6 +111,7 @@ def solve_incomplete_stock():
     dal_instance = StockDAL()
     stocks = Stock.search()
     timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
+    dal_instance.close()
     for i in xrange(1, len(timestamps) - 1):
         if timestamps[i][0] != len(stocks):
             time = timestamps[i][1]

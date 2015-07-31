@@ -7,20 +7,21 @@ from src.DB.Models import *
 from src.DB.DAL import StockDAL
 from src.utils.DbUtils import unicode2int
 
+
 # todo: update
 def rm_after_market_quotes():
     ## US East
-    #sql = 'SELECT * from quote where ' +\
+    # sql = 'SELECT * from quote where ' +\
     #    'weekday(time) > 4 or ' +\
     #    'extract(hour_second from time) > 160000 or ' +\
     #    'extract(hour_second from time) < 93000'
     dal_instance = StockDAL()
-    sql = 'SELECT * from quote where ' +\
-        '(weekday(time) = 0 and extract(hour_second from time) < 40001) or ' +\
-        '(weekday(time) = 5 and extract(hour_second from time) > 212959) or ' +\
-        'weekday(time) = 6 or ' +\
-        '(extract(hour_second from time) > 40000 and ' +\
-        'extract(hour_second from time) < 213000)'
+    sql = 'SELECT * from quote where ' + \
+          '(weekday(time) = 0 and extract(hour_second from time) < 40001) or ' + \
+          '(weekday(time) = 5 and extract(hour_second from time) > 212959) or ' + \
+          'weekday(time) = 6 or ' + \
+          '(extract(hour_second from time) > 40000 and ' + \
+          'extract(hour_second from time) < 213000)'
     records = dal_instance.select(sql)
     after_market_quotes = [Quote(id=quo[0], price=quo[1], volume=quo[2], time=quo[3]) for quo in records]
     if after_market_quotes != []:
@@ -85,14 +86,14 @@ def solve_time_skip():
                 duration = (timestamps[i][1] - timestamps[i - 1][1]).seconds
                 for st in Stock.search():
                     id = st['id']
-                    beg_quote = Quote.search(id=id, time=timestamps[i-1][1])[0]
+                    beg_quote = Quote.search(id=id, time=timestamps[i - 1][1])[0]
                     end_quote = Quote.search(id=id, time=timestamps[i][1])[0]
                     beg_price = beg_quote['price']
                     end_price = end_quote['price']
                     beg_vlm = beg_quote['volume']
                     end_vlm = end_quote['volume']
                     for t in xrange(1, duration):
-                        time = timestamps[i-1][1] + datetime.timedelta(0, t)
+                        time = timestamps[i - 1][1] + datetime.timedelta(0, t)
                         print time
                         price = beg_price + (end_price - beg_price) / duration * t
                         volume = beg_vlm + (end_vlm - beg_vlm) / duration * t
@@ -108,17 +109,17 @@ def solve_incomplete_stock():
     dal_instance = StockDAL()
     stocks = Stock.search()
     timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
-    for i in xrange(1, len(timestamps)-1):
+    for i in xrange(1, len(timestamps) - 1):
         if timestamps[i][0] != len(stocks):
             time = timestamps[i][1]
             stocks_recorded = [quote['id'] for quote in Quote.search(time=time)]
             stocks_complete = [st['id'] for st in Stock.search()]
             for id in stocks_complete:
                 if id not in stocks_recorded:
-                    beg_quote = Quote.search(id=id, time=timestamps[i-1][1])[0]
-                    end_quote = Quote.search(id=id, time=timestamps[i+1][1])[0]
+                    beg_quote = Quote.search(id=id, time=timestamps[i - 1][1])[0]
+                    end_quote = Quote.search(id=id, time=timestamps[i + 1][1])[0]
                     price = (beg_quote['price'] + end_quote['price']) / 2
-                    volume = (beg_quote['volume'] + end_quote['volume']) /2
+                    volume = (beg_quote['volume'] + end_quote['volume']) / 2
                     quote = Quote(id=id, time=time, price=price, volume=volume)
                     Quote.add([quote])
                     print 'Added quote for stock ID:%s at %s and at $%s, vlm %s' % (id, time, price, volume)
@@ -126,7 +127,7 @@ def solve_incomplete_stock():
 
 if __name__ == '__main__':
     rm_after_market_quotes()
-    #update_company_info()
-    #check_data_integrity()
-    #solve_time_skip()
-    #solve_incomplete_stock()
+    # update_company_info()
+    # check_data_integrity()
+    # solve_time_skip()
+    # solve_incomplete_stock()

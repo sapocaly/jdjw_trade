@@ -24,7 +24,7 @@ class Entry(dict):
     def _query_dict(self):
         query_dict = {}
         for key in self.keys():
-            if key[0] == '_' and self[key] != None:
+            if key[0] == '_':
                 query_dict[key] = self[key]
         return query_dict
 

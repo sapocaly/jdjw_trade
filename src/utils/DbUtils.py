@@ -5,7 +5,7 @@ __author__ = 'Sapocaly'
 
 # unicode to integer (unit: cent)
 def unicode2int(unicode_str):
-    return int(float(unicode_str) * 100)
+    return int(float(str(unicode_str)) * 100)
 
 
 def int2float(int_num):

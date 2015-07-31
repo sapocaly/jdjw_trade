@@ -104,7 +104,11 @@ def select_from(table_name, **args):
         if len(args) > 0:
             sql = "select * from {0} where ".format(table_name)
             for key in args:
-                sql += "{0} = {1} and ".format(key, sql_format(args[key]))
+                formatted_key = sql_format(args[key])
+                if formatted_key == 'null':
+                    sql += "{0} is {1} and ".format(key, 'null')
+                else:
+                    sql += "{0} = {1} and ".format(key, formatted_key)
             sql = sql[:-5]
         else:
             sql = "select * from " + table_name
@@ -120,7 +124,11 @@ def delete_from(table_name, **args):
         if len(args) > 0:
             sql = "delete from {0} where ".format(table_name)
             for key in args:
-                sql += "{0} = {1} and ".format(key, sql_format(args[key]))
+                formatted_key = sql_format(args[key])
+                if formatted_key == 'null':
+                    sql += "{0} is {1} and ".format(key, 'null')
+                else:
+                    sql += "{0} = {1} and ".format(key, formatted_key)
             sql = sql[:-5]
         else:
             sql = "select * from " + table_name
@@ -142,8 +150,11 @@ def update(table_name, **args):
         if len(query_keys) != 0:
             where_clause = 'where '
             for key in query_keys:
-                where_clause += "{0} = {1} and ".format(
-                    key, args['_' + key])
+                formatted_key = args['_' + key]
+                if formatted_key == 'null':
+                    where_clause += "{0} is {1} and ".format(key, 'null')
+                else:
+                    where_clause += "{0} = {1} and ".format(key, formatted_key)
             where_clause = where_clause[:-5]
         update_clause = ''
         for key in update_keys:
@@ -200,7 +211,11 @@ class StockDAL:
             if len(args) > 0:
                 sql = "select * from {0} where ".format(table_name)
                 for key in args:
-                    sql += "{0} = {1} and ".format(key, sql_format(args[key]))
+                    formatted_key = sql_format(args[key])
+                    if formatted_key == 'null':
+                        sql += "{0} is {1} and ".format(key, 'null')
+                    else:
+                        sql += "{0} = {1} and ".format(key, formatted_key)
                 sql = sql[:-5]
             else:
                 sql = "select * from " + table_name
@@ -215,7 +230,11 @@ class StockDAL:
             if len(args) > 0:
                 sql = "delete from {0} where ".format(table_name)
                 for key in args:
-                    sql += "{0} = {1} and ".format(key, sql_format(args[key]))
+                    formatted_key = sql_format(args[key])
+                    if formatted_key == 'null':
+                        sql += "{0} is {1} and ".format(key, 'null')
+                    else:
+                        sql += "{0} = {1} and ".format(key, formatted_key)
                 sql = sql[:-5]
             else:
                 sql = "select * from " + table_name
@@ -237,8 +256,11 @@ class StockDAL:
             if len(query_keys) != 0:
                 where_clause = 'where '
                 for key in query_keys:
-                    where_clause += "{0} = {1} and ".format(
-                        key, args['_' + key])
+                    formatted_key = args['_' + key]
+                    if formatted_key == 'null':
+                        where_clause += "{0} is {1} and ".format(key, 'null')
+                    else:
+                        where_clause += "{0} = {1} and ".format(key, formatted_key)
                 where_clause = where_clause[:-5]
             update_clause = ''
             for key in update_keys:
@@ -291,12 +313,13 @@ if __name__ == '__main__':
     a = StockDAL()
     a.insert_into('stock', ticker="uber", name=None)
     a.insert_into('stock', aticker="uber", name=None)
-    a.update('stock', _ticker="uber", name="优步")
-    print a.select_from('stock', ticker="ali")
-    a.delete_from('stock', ticker='uber')
+    a.select_from('stock', ticker="uber", name=None)
+    a.update('stock', _ticker="uber", _name=None, name="优步")
+    a.delete_from('stock', ticker='uber', pv_close=None)
     a.close()
-    print 'finished'
     insert_into('stock', ticker='sheng')
-    delete_from('stock', ticker="sheng", name=None)
+    select_from('stock', name=None)
+    update('stock', _ticker='sheng', _name=None, name='shengye')
+    delete_from('stock', ticker="sheng", pv_close=None)
     close()
     print 'finished'

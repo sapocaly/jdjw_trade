@@ -1,5 +1,6 @@
 import functools
 import threading
+import time
 from src.utils import DBconfig
 import src.utils.LogConstant as LogConstant
 
@@ -13,6 +14,25 @@ logger = LogConstant.DAL_DIGEST_LOGGER
 logger_err = LogConstant.DAL_DIGEST_LOGGER_ERROR
 
 DB_ENGINE = None
+
+
+def sql_with_logging(func):
+    @functools.wraps(func)
+    def _wrapper(*args, **kw):
+        start = time.time()
+        sql = args[0]
+        result = 'True'
+        try:
+            return func(*args, **kw)
+        except Exception as e:
+            result = 'False'
+            logger_err.exception(sql)
+        finally:
+            delta = time.time() - start
+            log_string = '{0},{1},{2}'.format(sql, result, delta)
+            logger.info(log_string)
+
+    return _wrapper
 
 
 class Engine():
@@ -112,7 +132,7 @@ def sql_format(val):
 
 ECHO = False
 
-
+@sql_with_logging
 @with_connection
 def execute(sql):
     cursor = DB_CONNECTOR.cursor()
@@ -128,7 +148,7 @@ def execute(sql):
         logger_err.exception(str(e))
     cursor.close()
 
-
+@sql_with_logging
 @with_connection
 def select(sql):
     cursor = DB_CONNECTOR.cursor()
@@ -229,9 +249,6 @@ def update(table_name, **args):
         logger_err.exception(str(e))
 
 
-
-
-
 if __name__ == '__main__':
     ECHO = True
     create_engine(**config_args)
@@ -251,11 +268,12 @@ if __name__ == '__main__':
     print DB_ENGINE
     #############
     create_engine(**config_args)
-    select_from('stock',ticker='aapl')
-    insert_into('stock', ticker='sheng')
-    insert_into('stock', aticker='sheng')
+    select_from('stock', ticker='aapl')
+    with connection():
+        insert_into('stock', ticker='sheng')
+        print DB_ENGINE.conn.is_connected()
+        insert_into('stock', aticker='sheng')
     select_from('stock', name=None)
     update('stock', _ticker='sheng', _name=None, name='shengye')
     delete_from('stock', ticker="sheng", pv_close=None)
     close_engine()
-

@@ -1,50 +1,16 @@
 import functools
 import threading
 import time
+
 from src.utils import DBconfig
 import src.utils.LogConstant as LogConstant
 
 __author__ = 'Sapocaly'
 
-config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
-config_args = dict(zip(['host', 'user', 'passwd', 'database'],
-                       [config.DB_HOST, config.DB_USER, config.DB_PASSWORD, config.DB_NAME]))
-
 logger = LogConstant.DAL_DIGEST_LOGGER
 logger_err = LogConstant.DAL_DIGEST_LOGGER_ERROR
 
 DB_ENGINE = None
-
-
-def sql_with_logging(func):
-    @functools.wraps(func)
-    def _wrapper(*args, **kw):
-        start = time.time()
-        sql = args[0]
-        result = 'True'
-        try:
-            return func(*args, **kw)
-        except Exception as e:
-            result = 'False'
-            logger_err.exception(sql)
-        finally:
-            delta = int((time.time() - start) * 1000)
-            log_string = '({0}),{1},{2}ms'.format(sql, result, delta)
-            logger.info(log_string)
-
-    return _wrapper
-
-
-def exception_handle(func):
-    @functools.wraps(func)
-    def _wrapper(*args, **kw):
-        try:
-            return func(*args, **kw)
-        except Exception as e:
-            log_string = '{0},{1},{2}'.format(func.__name__, args, kw)
-            logger_err.exception(log_string)
-
-    return _wrapper
 
 
 class Engine():
@@ -63,7 +29,6 @@ def create_engine(**args):
     if DB_ENGINE is not None:
         raise Exception('Engine is already initialized.')
     DB_ENGINE = Engine(mysql.connector.connect(**args))
-    ##log
 
 
 def close_engine():
@@ -79,17 +44,17 @@ class DbConnector(threading.local):
 
     def init(self):
         global DB_ENGINE
-        connection = DB_ENGINE.connect()
-        logger.info('open connection <{0}>...'.format(str(hex(id(connection)))))
-        self.conn = connection
+        conn = DB_ENGINE.connect()
+        logger.info('open connection <{0}>...'.format(str(hex(id(conn)))))
+        self.conn = conn
 
     def is_init(self):
         return not self.conn is None
 
     def close(self):
-        connection = self.conn
-        connection.close()
-        logger.info('close connection <{0}>...'.format(str(hex(id(connection)))))
+        conn = self.conn
+        conn.close()
+        logger.info('close connection <{0}>...'.format(str(hex(id(conn)))))
         self.conn = None
         ##log
 
@@ -149,41 +114,68 @@ def sql_format(val):
 ECHO = False
 
 
+def sql_with_logging(func):
+    @functools.wraps(func)
+    def _wrapper(*args, **kw):
+        start = time.time()
+        sql = args[0]
+        if ECHO:
+            print sql
+        result = 'True'
+        try:
+            result = func(*args, **kw)
+            if result and ECHO:
+                print result
+            return result
+        except Exception as e:
+            result = 'False'
+            logger_err.exception(sql)
+        finally:
+            delta = int((time.time() - start) * 1000)
+            log_string = '({0}),{1},{2}ms'.format(sql, result, delta)
+            logger.info(log_string)
+
+    return _wrapper
+
+
+def exception_handle(func):
+    @functools.wraps(func)
+    def _wrapper(*args, **kw):
+        try:
+            return func(*args, **kw)
+        except Exception as e:
+            log_string = '{0},{1},{2}'.format(func.__name__, args, kw)
+            logger_err.exception(log_string)
+
+    return _wrapper
+
+
 @sql_with_logging
 @with_connection
 def execute(sql):
-    cursor = DB_CONNECTOR.cursor()
+    cursor = None
     try:
-        if ECHO:
-            print sql
+        cursor = DB_CONNECTOR.cursor()
         cursor.execute(sql)
         DB_CONNECTOR.commit()
-    except Exception as e:
-        if ECHO:
-            print e
-        logger_err.error(sql)
-        logger_err.exception(str(e))
-    cursor.close()
+    finally:
+        if cursor:
+            cursor.close()
 
 
 @sql_with_logging
 @with_connection
 def select(sql):
-    cursor = DB_CONNECTOR.cursor()
+    cursor = None
     try:
-        if ECHO:
-            print sql
+        cursor = DB_CONNECTOR.cursor()
         cursor.execute(sql)
         results = [i for i in cursor]
-        if ECHO:
-            print results
         return results
-    except Exception as e:
-        if ECHO:
-            print e
-        logger_err.error(sql)
-        logger_err.exception(str(e))
-    cursor.close()
+    finally:
+        if cursor:
+            cursor.close()
+
 
 @exception_handle
 def insert_into(table_name, **args):
@@ -254,6 +246,9 @@ def update(table_name, **args):
 
 
 if __name__ == '__main__':
+    config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
+    config_args = dict(zip(['host', 'user', 'passwd', 'database'],
+                           [config.DB_HOST, config.DB_USER, config.DB_PASSWORD, config.DB_NAME]))
     ECHO = True
     create_engine(**config_args)
     print DB_ENGINE.conn.is_connected()
@@ -270,7 +265,7 @@ if __name__ == '__main__':
     print DB_ENGINE.conn.is_connected()
     close_engine()
     print DB_ENGINE
-    #############
+
     create_engine(**config_args)
     select_from('stock', ticker='aapl')
     with connection():

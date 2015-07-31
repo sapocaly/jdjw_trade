@@ -28,9 +28,21 @@ def sql_with_logging(func):
             result = 'False'
             logger_err.exception(sql)
         finally:
-            delta = time.time() - start
-            log_string = '{0},{1},{2}'.format(sql, result, delta)
+            delta = int((time.time() - start) * 1000)
+            log_string = '({0}),{1},{2}ms'.format(sql, result, delta)
             logger.info(log_string)
+
+    return _wrapper
+
+
+def exception_handle(func):
+    @functools.wraps(func)
+    def _wrapper(*args, **kw):
+        try:
+            return func(*args, **kw)
+        except Exception as e:
+            log_string = '{0},{1},{2}'.format(func.__name__, args, kw)
+            logger_err.exception(log_string)
 
     return _wrapper
 
@@ -67,13 +79,17 @@ class DbConnector(threading.local):
 
     def init(self):
         global DB_ENGINE
-        self.conn = DB_ENGINE.connect()
+        connection = DB_ENGINE.connect()
+        logger.info('open connection <{0}>...'.format(str(hex(id(connection)))))
+        self.conn = connection
 
     def is_init(self):
         return not self.conn is None
 
     def close(self):
-        self.conn.close()
+        connection = self.conn
+        connection.close()
+        logger.info('close connection <{0}>...'.format(str(hex(id(connection)))))
         self.conn = None
         ##log
 
@@ -132,6 +148,7 @@ def sql_format(val):
 
 ECHO = False
 
+
 @sql_with_logging
 @with_connection
 def execute(sql):
@@ -141,12 +158,13 @@ def execute(sql):
             print sql
         cursor.execute(sql)
         DB_CONNECTOR.commit()
-        logger.info(sql)
     except Exception as e:
-        print e
+        if ECHO:
+            print e
         logger_err.error(sql)
         logger_err.exception(str(e))
     cursor.close()
+
 
 @sql_with_logging
 @with_connection
@@ -157,96 +175,82 @@ def select(sql):
             print sql
         cursor.execute(sql)
         results = [i for i in cursor]
-        logger.info(sql)
         if ECHO:
             print results
         return results
     except Exception as e:
-        print e
+        if ECHO:
+            print e
         logger_err.error(sql)
         logger_err.exception(str(e))
     cursor.close()
 
-
+@exception_handle
 def insert_into(table_name, **args):
-    try:
-        keys = args.keys()
-        values = [sql_format(args[key]) for key in keys]
-        sql = "insert into {0} ({1})values({2})".format(
-            table_name, ",".join(keys), ",".join(values))
-        execute(sql)
-    except Exception as e:
-        print e
-        logger_err.exception(str(e))
+    keys = args.keys()
+    values = [sql_format(args[key]) for key in keys]
+    sql = "insert into {0} ({1})values({2})".format(
+        table_name, ",".join(keys), ",".join(values))
+    execute(sql)
 
 
+@exception_handle
 def select_from(table_name, **args):
-    try:
-        if len(args) > 0:
-            sql = "select * from {0} where ".format(table_name)
-            for key in args:
-                formatted_key = sql_format(args[key])
-                if formatted_key == 'null':
-                    sql += "{0} is {1} and ".format(key, 'null')
-                else:
-                    sql += "{0} = {1} and ".format(key, formatted_key)
-            sql = sql[:-5]
-        else:
-            sql = "select * from " + table_name
-
-        return select(sql)
-    except Exception as e:
-        print e
-        logger_err.exception(str(e))
+    if len(args) > 0:
+        sql = "select * from {0} where ".format(table_name)
+        for key in args:
+            formatted_key = sql_format(args[key])
+            if formatted_key == 'null':
+                sql += "{0} is {1} and ".format(key, 'null')
+            else:
+                sql += "{0} = {1} and ".format(key, formatted_key)
+        sql = sql[:-5]
+    else:
+        sql = "select * from " + table_name
+    return select(sql)
 
 
+@exception_handle
 def delete_from(table_name, **args):
-    try:
-        if len(args) > 0:
-            sql = "delete from {0} where ".format(table_name)
-            for key in args:
-                formatted_key = sql_format(args[key])
-                if formatted_key == 'null':
-                    sql += "{0} is {1} and ".format(key, 'null')
-                else:
-                    sql += "{0} = {1} and ".format(key, formatted_key)
-            sql = sql[:-5]
-        else:
-            sql = "select * from " + table_name
-        execute(sql)
-    except Exception as e:
-        print e
-        logger_err.exception(str(e))
+    if len(args) > 0:
+        sql = "delete from {0} where ".format(table_name)
+        for key in args:
+            formatted_key = sql_format(args[key])
+            if formatted_key == 'null':
+                sql += "{0} is {1} and ".format(key, 'null')
+            else:
+                sql += "{0} = {1} and ".format(key, formatted_key)
+        sql = sql[:-5]
+    else:
+        sql = "select * from " + table_name
+    execute(sql)
 
 
+@exception_handle
 def update(table_name, **args):
-    try:
-        keys = args.keys()
-        query_keys = filter(lambda x: x[0] == '_', keys)
-        update_keys = filter(lambda x: x[0] != '_', keys)
-        query_keys = list(map(lambda x: x[1:], query_keys))
-        for key in keys:
-            args[key] = sql_format(args[key])
-        where_clause = ''
-        if len(query_keys) != 0:
-            where_clause = 'where '
-            for key in query_keys:
-                formatted_key = args['_' + key]
-                if formatted_key == 'null':
-                    where_clause += "{0} is {1} and ".format(key, 'null')
-                else:
-                    where_clause += "{0} = {1} and ".format(key, formatted_key)
-            where_clause = where_clause[:-5]
-        update_clause = ''
-        for key in update_keys:
-            update_clause += "{0} = {1}, ".format(key, args[key])
-        update_clause = update_clause[:-2]
-        sql = "update {0} set {1} {2}".format(
-            table_name, update_clause, where_clause)
-        execute(sql)
-    except Exception as e:
-        print e
-        logger_err.exception(str(e))
+    keys = args.keys()
+    query_keys = filter(lambda x: x[0] == '_', keys)
+    update_keys = filter(lambda x: x[0] != '_', keys)
+    query_keys = list(map(lambda x: x[1:], query_keys))
+    for key in keys:
+        args[key] = sql_format(args[key])
+    where_clause = ''
+    if len(query_keys) != 0:
+        where_clause = 'where '
+        for key in query_keys:
+            formatted_key = args['_' + key]
+            if formatted_key == 'null':
+                where_clause += "{0} is {1} and ".format(key, 'null')
+            else:
+                where_clause += "{0} = {1} and ".format(key, formatted_key)
+        where_clause = where_clause[:-5]
+    update_clause = ''
+    for key in update_keys:
+        update_clause += "{0} = {1}, ".format(key, args[key])
+    update_clause = update_clause[:-2]
+    sql = "update {0} set {1} {2}".format(
+        table_name, update_clause, where_clause)
+    execute(sql)
 
 
 if __name__ == '__main__':

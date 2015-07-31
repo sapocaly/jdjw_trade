@@ -71,12 +71,12 @@ def execute(sql):
 def select(sql):
     cursor = DB_CONNECTION.cursor()
     try:
-        if StockDAL.ECHO:
+        if ECHO:
             print sql
         cursor.execute(sql)
         toReturn = [i for i in cursor]
         logger.info(sql)
-        if StockDAL.ECHO:
+        if ECHO:
             print toReturn
         return toReturn
     except Exception as e:
@@ -88,7 +88,6 @@ def select(sql):
 
 def insert_into(table_name, **args):
     try:
-        cursor = DB_CONNECTION.cursor()
         keys = args.keys()
         values = [sql_format(args[key]) for key in keys]
         sql = "insert into {0} ({1})values({2})".format(

@@ -7,22 +7,24 @@ from src.DB.Models import *
 from src.DB.DAL import StockDAL
 from src.utils.DbUtils import unicode2int
 
-
+# todo: update
 def rm_after_market_quotes():
     ## US East
-    # if (time.weekday() > 4) or\
-    #        ((time.hour > 4 or (time.hour == 4 and time.minute > 0))and
-    #         (time.hour < 21 or (time.hour == 21 and time.minute < 30))):
-    after_market_quotes = []
-    for quote in Quote.search():
-        time = quote['time']
-        # GMT +8
-        if (time.weekday() == 0 and (time.hour < 4 or (time.hour == 4 and time.minute == 0))) or \
-                (time.weekday() == 5 and (time.hour > 21 or (time.hour == 21 and time.minute >= 30))) or \
-                        time.weekday() == 6 or \
-                ((time.hour > 4 or (time.hour == 4 and time.minute > 0)) and
-                     (time.hour < 21 or (time.hour == 21 and time.minute < 30))):
-            after_market_quotes.append(quote)
+    #sql = 'SELECT * from quote where ' +\
+    #    'weekday(time) > 4 or ' +\
+    #    'extract(hour_second from time) > 160000 or ' +\
+    #    'extract(hour_second from time) < 93000'
+    dal_instance = StockDAL()
+    sql = 'SELECT * from quote where ' +\
+        '(weekday(time) = 0 and extract(hour_second from time) < 40001) or ' +\
+        '(weekday(time) = 5 and extract(hour_second from time) > 212959) or ' +\
+        'weekday(time) = 6 or ' +\
+        '(extract(hour_second from time) > 40000 and ' +\
+        'extract(hour_second from time) < 213000)'
+    records = dal_instance.select(sql)
+    after_market_quotes = [Quote(id=quo[0], price=quo[1], volume=quo[2], time=quo[3]) for quo in records]
+    if after_market_quotes != []:
+        print 'After market quotes retrieved. Removing...'
     Quote.rm(after_market_quotes)
 
 
@@ -51,13 +53,10 @@ def update_company_info():
         stock.save()
 
 
-def check_data_integrity(range=datetime.date.today()):
+def check_data_integrity():
     dal_instance = StockDAL()
     stocks = dal_instance.select('select count(*) from stock')[0][0]
-    if range == datetime.date.today():
-        timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
-    else:
-        timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
+    timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
     print "Total: %d distinct timestamps, should have %d stocks." % (len(timestamps), stocks)
     incomplete_count = 0
     for stamp in timestamps:
@@ -74,6 +73,9 @@ def check_data_integrity(range=datetime.date.today()):
 
 
 def solve_time_skip():
+    """
+    this assumes that there is no after market data
+    """
     dal_instance = StockDAL()
     timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
     # solve time skip
@@ -123,8 +125,8 @@ def solve_incomplete_stock():
 
 
 if __name__ == '__main__':
-    #rm_after_market_quotes()
+    rm_after_market_quotes()
     #update_company_info()
     #check_data_integrity()
-    solve_time_skip()
-    solve_incomplete_stock()
+    #solve_time_skip()
+    #solve_incomplete_stock()

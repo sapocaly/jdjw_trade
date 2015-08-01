@@ -14,8 +14,16 @@ import json
 import datetime
 
 from src.DB import Models
+from src.utils import DBconfig
 from src.utils.DbUtils import unicode2int, chop_microseconds
 import utils.LogConstant as LogConstant
+
+import src.DB.NewDAL
+
+config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
+config_args = dict(zip(['host', 'user', 'passwd', 'database'],
+                          [config.DB_HOST, config.DB_USER, config.DB_PASSWORD, config.DB_NAME]))
+src.DB.NewDAL.create_engine(**config_args)
 
 logger = LogConstant.FETCH_DIGEST_LOGGER
 logger_alert = LogConstant.FETCH_DIGEST_LOGGER_ALERT
@@ -47,7 +55,15 @@ def fetch_quotes(ticker_id_dict):
         yql_url = baseurl + urllib.urlencode({'q': yql_query}) + \
                   "&format=json&diagnostics=true&env=store://datatables.org/alltableswithkeys&callback="
         # get data
-        result = urllib2.urlopen(yql_url).read()
+        for i in range(3):
+            try:
+                result = urllib2.urlopen(yql_url).read()
+                log_string = '(QUERY:' + yql_url + '),SUCCESS'
+                logger.info(log_string)
+                break
+            except:
+                log_string = '(QUERY:' + yql_url + '),FAIL'
+                logger.info(log_string)
         data = json.loads(result)
         quote_data = data['query']['results']['quote']
 

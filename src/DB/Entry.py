@@ -5,7 +5,7 @@
 Model class for all entries
 """
 
-from src.DB.DAL import StockDAL
+from src.DB.NewDAL import *
 
 
 # governing class for all entries. this is a dict
@@ -37,44 +37,42 @@ class Entry(dict):
 
     # todo: 同步
     def save(self):
-        dal_instance = StockDAL()
         try:
-            dal_instance.update(self.__class__.table, **dict(self._query_dict(), **self._working_dict()))
+            update(self.__class__.table, **dict(self._query_dict(), **self._working_dict()))
         except Exception as e:
             print 'Saving failed: ', str(self), e
-        finally:
-            dal_instance.close()
 
     @classmethod
     def search(cls, **args):
-        dal_instance = StockDAL()
         try:
-            selection = dal_instance.select_from(cls.table, **args)
+            selection = select_from(cls.table, **args)
             # 获取entry信息，创建新instance，initialize，生成list
-            results = [cls(**dict(zip(cls.fields, entry))) for entry in selection]
+            return [cls(**dict(zip(cls.fields, entry))) for entry in selection]
         except Exception as e:
             print 'Getting failed: ', str(args), e
-        finally:
-            dal_instance.close()
-            return results
 
     @classmethod
     def add(cls, lst):
-        dal_instance = StockDAL()
-        for entry in lst:
-            try:
-                dal_instance.insert_into(cls.table, **entry._working_dict())
-            except Exception as e:
-                print 'Adding failed: ', str(entry), e
-        dal_instance.close()
+        # 是否需要保持事务性?
+        with connection():
+            for entry in lst:
+                try:
+                    insert_into(cls.table, **entry._working_dict())
+                except Exception as e:
+                    print 'Adding failed: ', str(entry), e
 
     # remove, 即可传入多个Entry也可传入list of Entry
     @classmethod
     def rm(cls, lst):
-        dal_instance = StockDAL()
-        for entry in lst:
-            try:
-                dal_instance.delete_from(cls.table, **entry._working_dict())
-            except Exception as e:
-                print 'Removing failed: ', str(entry), e
-        dal_instance.close()
+        with connection():
+            for entry in lst:
+                try:
+                    delete_from(cls.table, **entry._working_dict())
+                except Exception as e:
+                    print 'Removing failed: ', str(entry), e
+
+
+if __name__ == '__main__':
+    config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
+    config_args = dict(zip(['host', 'user', 'passwd', 'database'],
+                           [config.DB_HOST, config.DB_USER, config.DB_PASSWORD, config.DB_NAME]))

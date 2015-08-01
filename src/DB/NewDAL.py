@@ -11,34 +11,31 @@ __author__ = 'Sapocaly'
 _logger = LogConstant.DAL_DIGEST_LOGGER
 _logger_err = LogConstant.DAL_DIGEST_LOGGER_ERROR
 
-DB_ENGINE = None
+_DB_ENGINE = None
 
 ECHO = False
 
 
-class Engine:
+class Engine(threading.local):
     def __init__(self, conn):
         self.conn = conn
 
     def connect(self):
-        if not self.conn.is_connected():
-            self.conn.connect()
-        return self.conn
+        return self.conn()
 
 
 def create_engine(**args):
     import mysql.connector
-    global DB_ENGINE
-    if DB_ENGINE is not None:
+    global _DB_ENGINE
+    if _DB_ENGINE is not None:
         raise Exception('Engine is already initialized.')
-    DB_ENGINE = Engine(mysql.connector.connect(**args))
+    _DB_ENGINE = Engine(lambda : mysql.connector.connect(**args))
 
 
 def close_engine():
-    global DB_ENGINE
-    if DB_ENGINE is not None:
-        DB_ENGINE.conn.disconnect()
-        DB_ENGINE = None
+    global _DB_ENGINE
+    if _DB_ENGINE is not None:
+        _DB_ENGINE = None
 
 
 class DbConnector(threading.local):
@@ -48,8 +45,11 @@ class DbConnector(threading.local):
         self.need_rollback = False
 
     def init(self):
-        global DB_ENGINE
-        conn = DB_ENGINE.connect()
+        global _DB_ENGINE
+        if _DB_ENGINE is None:
+            _logger.info('DB_ENGINE_NOT_INITIALIZED')
+            raise Exception('NoneEngineException')
+        conn = _DB_ENGINE.connect()
         _logger.info('open connection <{0}>...'.format(hex(id(conn))))
         self.conn = conn
 
@@ -190,10 +190,11 @@ def sql_with_logging(func):
             res = func(*args, **kw)
             if res and ECHO:
                 print res
-            return result
+            return res
         except Exception as e:
             result = 'False'
             _logger_err.exception(sql)
+            return 'FAILURE'
         finally:
             delta = int((time.time() - start) * 1000)
             log_string = '({0}),{1},{2}ms'.format(sql, result, delta)
@@ -210,12 +211,13 @@ def exception_handler(func):
         except Exception as e:
             log_string = '{0},{1},{2}'.format(func.__name__, args, kw)
             _logger_err.exception(log_string)
+            return 'FAILURE'
 
     return _wrapper
 
 
-@sql_with_logging
 @with_connection
+@sql_with_logging
 def execute(sql):
     cursor = None
     success = False
@@ -233,8 +235,8 @@ def execute(sql):
             cursor.close()
 
 
-@sql_with_logging
 @with_connection
+@sql_with_logging
 def select(sql):
     cursor = None
     success = False
@@ -250,7 +252,6 @@ def select(sql):
             _DB_CONNECTOR.need_rollback = True
         if cursor:
             cursor.close()
-
 
 
 @exception_handler
@@ -327,10 +328,8 @@ if __name__ == '__main__':
                            [config.DB_HOST, config.DB_USER, config.DB_PASSWORD, config.DB_NAME]))
     ECHO = True
     create_engine(**config_args)
-    print DB_ENGINE.conn.is_connected()
     try:
         with connection():
-            print DB_ENGINE.conn.is_connected()
             print _DB_CONNECTOR.conn
             print 1
             raise Exception()
@@ -338,15 +337,13 @@ if __name__ == '__main__':
         print 'good'
 
     print _DB_CONNECTOR.conn
-    print DB_ENGINE.conn.is_connected()
     close_engine()
-    print DB_ENGINE
+    print _DB_ENGINE
 
     create_engine(**config_args)
     select_from('stock', ticker='aapl')
     with connection():
         insert_into('stock', ticker='sheng')
-        print DB_ENGINE.conn.is_connected()
         insert_into('stock', aticker='sheng')
     select_from('stock', name=None)
     update('stock', _ticker='sheng', _name=None, name='shengye')
@@ -362,8 +359,5 @@ if __name__ == '__main__':
             update('stock', _ticker='sheng', _name=None, name='shengye')
             delete_from('stock', ticker="sheng", pv_close=None)
         delete_from('stock', ticker="sheng", pv_close=None)
+    print select_from('stock')
     close_engine()
-
-
-
-

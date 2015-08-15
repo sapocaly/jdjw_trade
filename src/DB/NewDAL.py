@@ -24,12 +24,13 @@ class Engine(threading.local):
         return self.conn()
 
 
+# have to create_engine only once before start
 def create_engine(**args):
     import mysql.connector
     global _DB_ENGINE
     if _DB_ENGINE is not None:
         raise Exception('Engine is already initialized.')
-    _DB_ENGINE = Engine(lambda : mysql.connector.connect(**args))
+    _DB_ENGINE = Engine(lambda: mysql.connector.connect(**args))
 
 
 def close_engine():
@@ -50,7 +51,7 @@ class DbConnector(threading.local):
             _logger.info('DB_ENGINE_NOT_INITIALIZED')
             raise Exception('NoneEngineException')
         conn = _DB_ENGINE.connect()
-        _logger.info('open connection <{0}>...'.format(hex(id(conn))))
+        _logger.info('open connection <{0}>'.format(hex(id(conn))))
         self.conn = conn
 
     def is_init(self):
@@ -59,7 +60,7 @@ class DbConnector(threading.local):
     def close(self):
         conn = self.conn
         conn.close()
-        _logger.info('close connection <{0}>...'.format(hex(id(conn))))
+        _logger.info('close connection <{0}>'.format(hex(id(conn))))
         self.conn = None
 
     def commit(self):
@@ -167,6 +168,7 @@ def with_transaction(func):
     return _wrapper
 
 
+# sql format helper
 def sql_format(val):
     if isinstance(val, int):
         return str(val)
@@ -178,6 +180,7 @@ def sql_format(val):
         return "'{0}'".format(str(val))
 
 
+# logging wrapper
 def sql_with_logging(func):
     @functools.wraps(func)
     def _wrapper(*args, **kw):
@@ -194,7 +197,7 @@ def sql_with_logging(func):
         except Exception as e:
             result = 'False'
             _logger_err.exception(sql)
-            return 'FAILURE'
+            raise e
         finally:
             delta = int((time.time() - start) * 1000)
             log_string = '({0}),{1},{2}ms'.format(sql, result, delta)
@@ -203,6 +206,7 @@ def sql_with_logging(func):
     return _wrapper
 
 
+# outter exception wrapper
 def exception_handler(func):
     @functools.wraps(func)
     def _wrapper(*args, **kw):
@@ -211,7 +215,7 @@ def exception_handler(func):
         except Exception as e:
             log_string = '{0},{1},{2}'.format(func.__name__, args, kw)
             _logger_err.exception(log_string)
-            return 'FAILURE'
+            raise e
 
     return _wrapper
 
@@ -342,9 +346,12 @@ if __name__ == '__main__':
 
     create_engine(**config_args)
     select_from('stock', ticker='aapl')
-    with connection():
-        insert_into('stock', ticker='sheng')
-        insert_into('stock', aticker='sheng')
+    try:
+        with connection():
+            insert_into('stock', ticker='sheng')
+            insert_into('stock', aticker='sheng')
+    except:
+        pass
     select_from('stock', name=None)
     update('stock', _ticker='sheng', _name=None, name='shengye')
     delete_from('stock', ticker="sheng", pv_close=None)

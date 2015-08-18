@@ -6,8 +6,8 @@ Indicator Calculator
 
 import datetime
 
-from src.DB.DAL import StockDAL
-from src.DB.Models import *
+from src.DB.DAL import *
+from src.DB.Entry import *
 from src.utils.DbUtils import chop_microseconds
 
 
@@ -27,7 +27,6 @@ class iCalculator(object):
         :param unit: str, either second or day
         :return:
         """
-        dal_instance = StockDAL()
         self.time = time
         self.id = Stock.search(ticker=stock)[0]['id']
         self.period = period
@@ -37,11 +36,11 @@ class iCalculator(object):
             sql = ('select * from quote where ' +
                    'id = %d and ' % self.id +
                    'mod((extract(second from "%s") - extract(second from time)), %d) = 0 and ' % (
-                   self.time, self.frequency) +
+                       self.time, self.frequency) +
                    'extract(day_second from "%s") < extract(day_second from time)' % beg_time)
         elif unit == 'day':
             sql = ''
-        records = dal_instance.select(sql)
+        records = select(sql)
         self.quotes = [Quote(**dict(zip(Quote.fields, quo))) for quo in records]
 
     def price(self, index):
@@ -73,7 +72,7 @@ class iCalculator(object):
         if 'd' in record[0].keys() and record[0]['d'] > 0:
             d_1 = record[0]['d']
         rsv = (self.price(self.period) - self.low(self.period - 9, self.period)) / (
-        self.high(self.period - 9, self.period) - self.low(self.period - 9, self.period)) * 100
+            self.high(self.period - 9, self.period) - self.low(self.period - 9, self.period)) * 100
         k = rsv / 3 + 2 * k_1 / 3
         d = k / 3 + 2 * d_1 / 3
         j = 3 * d - 2 * k

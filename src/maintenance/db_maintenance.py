@@ -3,9 +3,14 @@ import urllib
 import json
 import datetime
 
-from src.DB.Models import *
-from src.DB.DAL import StockDAL
+from src.DB.Entry import *
 from src.utils.DbUtils import unicode2int
+from src.DB.DAL import *
+
+config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
+config_args = dict(zip(['host', 'user', 'passwd', 'database'],
+                       [config.DB_HOST, config.DB_USER, config.DB_PASSWORD, config.DB_NAME]))
+create_engine(**config_args)
 
 
 def rm_after_market_quotes():
@@ -14,15 +19,13 @@ def rm_after_market_quotes():
     #    'weekday(time) > 4 or ' +\
     #    'extract(hour_second from time) > 160000 or ' +\
     #    'extract(hour_second from time) < 93000'
-    dal_instance = StockDAL()
     sql = 'SELECT * from quote where ' + \
           '(weekday(time) = 0 and extract(hour_second from time) < 40001) or ' + \
           '(weekday(time) = 5 and extract(hour_second from time) > 212959) or ' + \
           'weekday(time) = 6 or ' + \
           '(extract(hour_second from time) > 40000 and ' + \
           'extract(hour_second from time) < 213000)'
-    records = dal_instance.select(sql)
-    dal_instance.close()
+    records = select(sql)
     after_market_quotes = [Quote(id=quo[0], price=quo[1], volume=quo[2], time=quo[3]) for quo in records]
     if after_market_quotes != []:
         print 'After market quotes retrieved. Removing...'
@@ -55,10 +58,8 @@ def update_company_info():
 
 
 def check_data_integrity():
-    dal_instance = StockDAL()
-    stocks = dal_instance.select('select count(*) from stock')[0][0]
-    timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
-    dal_instance.close()
+    stocks = select('select count(*) from stock')[0][0]
+    timestamps = select('select count(*), time from quote group by time order by time')
     print "Total: %d distinct timestamps, should have %d stocks." % (len(timestamps), stocks)
     incomplete_count = 0
     for stamp in timestamps:
@@ -78,9 +79,7 @@ def solve_time_skip():
     """
     this assumes that there is no after market data
     """
-    dal_instance = StockDAL()
-    timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
-    dal_instance.close()
+    timestamps = select('select count(*), time from quote group by time order by time')
     # solve time skip
     for i in xrange(1, len(timestamps)):
         if timestamps[i][1] - timestamps[i - 1][1] != datetime.timedelta(0, 1):
@@ -108,10 +107,8 @@ def solve_incomplete_stock():
     """
     this assumes that there is no time skip
     """
-    dal_instance = StockDAL()
     stocks = Stock.search()
-    timestamps = dal_instance.select('select count(*), time from quote group by time order by time')
-    dal_instance.close()
+    timestamps = select('select count(*), time from quote group by time order by time')
     for i in xrange(1, len(timestamps) - 1):
         if timestamps[i][0] != len(stocks):
             time = timestamps[i][1]

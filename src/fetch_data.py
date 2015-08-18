@@ -18,12 +18,12 @@ from src.utils import DBconfig
 from src.utils.DbUtils import unicode2int, chop_microseconds
 import utils.LogConstant as LogConstant
 
-import src.DB.NewDAL
+import src.DB.DAL
 
 config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
 config_args = dict(zip(['host', 'user', 'passwd', 'database'],
                           [config.DB_HOST, config.DB_USER, config.DB_PASSWORD, config.DB_NAME]))
-src.DB.NewDAL.create_engine(**config_args)
+src.DB.DAL.create_engine(**config_args)
 
 logger = LogConstant.FETCH_DIGEST_LOGGER
 logger_alert = LogConstant.FETCH_DIGEST_LOGGER_ALERT

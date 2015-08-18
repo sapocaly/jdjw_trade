@@ -5,7 +5,7 @@
 Model class for all entries
 """
 
-from src.DB.NewDAL import *
+from src.DB.DAL import *
 
 
 # governing class for all entries. this is a dict

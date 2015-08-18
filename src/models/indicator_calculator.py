@@ -6,7 +6,7 @@ Indicator Calculator
 
 import datetime
 
-from src.DB.Models import *
+from src.DB.Entry import *
 from src.utils.DbUtils import chop_microseconds
 
 

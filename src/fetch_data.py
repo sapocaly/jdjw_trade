@@ -13,7 +13,7 @@ import urllib
 import json
 import datetime
 
-from src.DB import Models
+from src.DB import Entry
 from src.utils import DBconfig
 from src.utils.DbUtils import unicode2int, chop_microseconds
 import utils.LogConstant as LogConstant
@@ -31,7 +31,7 @@ logger_alert = LogConstant.FETCH_DIGEST_LOGGER_ALERT
 
 def get_stock_list():
     # read from db
-    results = Models.Stock.search()
+    results = Entry.Stock.get()
     ticker_id_dict = {}
     for stock in results:
         ticker_id_dict[stock['ticker']] = stock['id']
@@ -68,14 +68,14 @@ def fetch_quotes(ticker_id_dict):
         quote_data = data['query']['results']['quote']
 
         # create objects
-        quotes = [Models.Quote(id=ticker_id_dict[q['symbol']],
+        quotes = [Entry.Quote(id=ticker_id_dict[q['symbol']],
                                price=unicode2int(q['LastTradePriceOnly']),
                                volume=q['Volume'],
                                time=fetch_time)
                   for q in quote_data]
         count = len(quotes)
         # write results into db
-        Models.Quote.add(quotes)
+        Entry.Quote.add(quotes)
         result = 'True'
     except Exception as e:
         result = 'False'

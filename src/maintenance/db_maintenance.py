@@ -3,7 +3,7 @@ import urllib
 import json
 import datetime
 
-from src.DB.Models import *
+from src.DB.Entry import *
 from src.DB.DAL import StockDAL
 from src.utils.DbUtils import unicode2int
 

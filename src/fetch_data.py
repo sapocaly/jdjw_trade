@@ -13,9 +13,17 @@ import urllib
 import json
 import datetime
 
-from src.DB import Models
+from src.DB import Entry
+from src.utils import DBconfig
 from src.utils.DbUtils import unicode2int, chop_microseconds
 import utils.LogConstant as LogConstant
+
+import src.DB.DAL
+
+config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
+config_args = dict(zip(['host', 'user', 'passwd', 'database'],
+                          [config.DB_HOST, config.DB_USER, config.DB_PASSWORD, config.DB_NAME]))
+src.DB.DAL.create_engine(**config_args)
 
 logger = LogConstant.FETCH_DIGEST_LOGGER
 logger_alert = LogConstant.FETCH_DIGEST_LOGGER_ALERT
@@ -23,7 +31,7 @@ logger_alert = LogConstant.FETCH_DIGEST_LOGGER_ALERT
 
 def get_stock_list():
     # read from db
-    results = Models.Stock.search()
+    results = Entry.Stock.get()
     ticker_id_dict = {}
     for stock in results:
         ticker_id_dict[stock['ticker']] = stock['id']
@@ -47,19 +55,27 @@ def fetch_quotes(ticker_id_dict):
         yql_url = baseurl + urllib.urlencode({'q': yql_query}) + \
                   "&format=json&diagnostics=true&env=store://datatables.org/alltableswithkeys&callback="
         # get data
-        result = urllib2.urlopen(yql_url).read()
+        for i in range(3):
+            try:
+                result = urllib2.urlopen(yql_url).read()
+                log_string = '(QUERY:' + yql_url + '),SUCCESS'
+                logger.info(log_string)
+                break
+            except:
+                log_string = '(QUERY:' + yql_url + '),FAIL'
+                logger.info(log_string)
         data = json.loads(result)
         quote_data = data['query']['results']['quote']
 
         # create objects
-        quotes = [Models.Quote(id=ticker_id_dict[q['symbol']],
+        quotes = [Entry.Quote(id=ticker_id_dict[q['symbol']],
                                price=unicode2int(q['LastTradePriceOnly']),
                                volume=q['Volume'],
                                time=fetch_time)
                   for q in quote_data]
         count = len(quotes)
         # write results into db
-        Models.Quote.add(quotes)
+        Entry.Quote.add(quotes)
         result = 'True'
     except Exception as e:
         result = 'False'

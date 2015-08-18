@@ -6,7 +6,7 @@ Indicator Calculator
 
 import datetime
 
-from src.DB.Models import *
+from src.DB.Entry import *
 from src.utils.DbUtils import chop_microseconds
 
 
@@ -23,13 +23,13 @@ class iCalculator(object):
                 day: 86400
         :return:
         """
-        dal_instance
+        dal_instance = None
         st = Stock.search(ticker=stock)[0]
         time = time
         id = st[id]
         period = period
         frequency = frequency
-        sql =
+        sql = None
         records = dal_instance.select(sql)
         quotes = [Quote(id=quo[0], price=quo[1], volume=quo[2], time=quo[3]) for quo in records]
 

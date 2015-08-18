@@ -1,28 +1,67 @@
-# -*- coding: utf-8 -*-
+import functools
 import threading
+import time
+import uuid
 
-import mysql.connector
-
-import src.utils.LogConstant as LogConstant
 from src.utils import DBconfig
+import src.utils.LogConstant as LogConstant
 
-config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
+__author__ = 'Sapocaly'
 
-logger = LogConstant.DAL_DIGEST_LOGGER
-logger_err = LogConstant.DAL_DIGEST_LOGGER_ERROR
+_logger = LogConstant.DAL_DIGEST_LOGGER
+_logger_err = LogConstant.DAL_DIGEST_LOGGER_ERROR
+
+_DB_ENGINE = None
 
 ECHO = False
 
 
-class Connection(threading.local):
+class Engine(threading.local):
+    def __init__(self, conn):
+        self.conn = conn
+
+    def connect(self):
+        return self.conn()
+
+
+# have to create_engine only once before start
+def create_engine(**args):
+    import mysql.connector
+    global _DB_ENGINE
+    if _DB_ENGINE is not None:
+        raise Exception('Engine is already initialized.')
+    _DB_ENGINE = Engine(lambda: mysql.connector.connect(**args))
+
+
+def close_engine():
+    global _DB_ENGINE
+    if _DB_ENGINE is not None:
+        _DB_ENGINE = None
+
+
+class DbConnector(threading.local):
     def __init__(self):
         self.conn = None
+        self.transaction_level = 0
+        self.need_rollback = False
 
-    def cursor(self):
-        if not self.conn:
-            self.conn = mysql.connector.connect(host=config.DB_HOST, user=config.DB_USER, passwd=config.DB_PASSWORD,
-                                                database=config.DB_NAME)
-        return self.conn.cursor()
+    def init(self):
+        global _DB_ENGINE
+        if _DB_ENGINE is None:
+            _logger.info('DB_ENGINE_NOT_INITIALIZED')
+            raise Exception('NoneEngineException')
+        conn = _DB_ENGINE.connect()
+        _logger.info('open connection <{0}>'.format(hex(id(conn))))
+        self.conn = conn
+
+    def is_init(self):
+        return not self.conn is None
+
+    def close(self):
+        conn = self.conn
+        conn.close()
+        _logger.info('close connection <{0}>'.format(hex(id(conn))))
+        self.conn = None
 
     def commit(self):
         self.conn.commit()
@@ -30,14 +69,106 @@ class Connection(threading.local):
     def rollback(self):
         self.conn.rollback()
 
-    def clean(self):
-        self.conn.close()
-        self.conn = None
+    def cursor(self):
+        return self.conn.cursor()
 
 
-DB_CONNECTION = Connection()
+_DB_CONNECTOR = DbConnector()
 
 
+class Connection():
+    def __enter__(self):
+        global _DB_CONNECTOR
+        if _DB_CONNECTOR.is_init():
+            self.need_clean = False
+        else:
+            _DB_CONNECTOR.init()
+            self.need_clean = True
+        return self
+
+    def __exit__(self, exctype, excvalue, traceback):
+        if self.need_clean:
+            global _DB_CONNECTOR
+            _DB_CONNECTOR.close()
+
+
+def connection():
+    return Connection()
+
+
+def with_connection(func):
+    @functools.wraps(func)
+    def _wrapper(*args, **kw):
+        with connection():
+            return func(*args, **kw)
+
+    return _wrapper
+
+
+class Transaction:
+    def __enter__(self):
+        self.uuid = str(uuid.uuid4())
+        global _DB_CONNECTOR
+        if _DB_CONNECTOR.is_init():
+            self.need_clean = False
+        else:
+            _DB_CONNECTOR.init()
+            self.need_clean = True
+        if _DB_CONNECTOR.transaction_level == 0:
+            _DB_CONNECTOR.need_rollback = False
+        log_string = 'Transaction <{0}> START (Nested = {1})'.format(self.uuid, _DB_CONNECTOR.transaction_level != 0)
+        _logger.info(log_string)
+        _DB_CONNECTOR.transaction_level += 1
+        return self
+
+    def __exit__(self, exctype, excvalue, traceback):
+        global _DB_CONNECTOR
+        _DB_CONNECTOR.transaction_level -= 1
+        log_string = 'Transaction <{0}> FINISH (Nested = {1})'.format(self.uuid, _DB_CONNECTOR.transaction_level != 0)
+        _logger.info(log_string)
+        if _DB_CONNECTOR.transaction_level == 0:
+            try:
+                if _DB_CONNECTOR.need_rollback:
+                    self.rollback()
+                else:
+                    self.commit()
+                _DB_CONNECTOR.need_rollback = False
+            finally:
+                if self.need_clean:
+                    _DB_CONNECTOR.close()
+
+    def commit(self):
+        global _DB_CONNECTOR
+        try:
+            _DB_CONNECTOR.commit()
+            log_string = 'Transaction <{0}> COMMIT_SUCCESS (Nested = False)'.format(self.uuid)
+            _logger.info(log_string)
+        except:
+            log_string = 'Transaction <{0}> COMMIT_FAIL (Nested = False)'.format(self.uuid)
+            _logger.info(log_string)
+            self.rollback()
+
+    def rollback(self):
+        global _DB_CONNECTOR
+        _DB_CONNECTOR.rollback()
+        log_string = 'Transaction <{0}> ROLLBACK_SUCCESS (Nested = False)'.format(self.uuid)
+        _logger.info(log_string)
+
+
+def transaction():
+    return Transaction()
+
+
+def with_transaction(func):
+    @functools.wraps(func)
+    def _wrapper(*args, **kw):
+        with transaction():
+            return func(*args, **kw)
+
+    return _wrapper
+
+
+# sql format helper
 def sql_format(val):
     if isinstance(val, int):
         return str(val)
@@ -49,276 +180,191 @@ def sql_format(val):
         return "'{0}'".format(str(val))
 
 
-def close():
-    DB_CONNECTION.clean()
+# logging wrapper
+def sql_with_logging(func):
+    @functools.wraps(func)
+    def _wrapper(*args, **kw):
+        start = time.time()
+        sql = args[0]
+        if ECHO:
+            print sql
+        result = 'True'
+        try:
+            res = func(*args, **kw)
+            if res and ECHO:
+                print res
+            return res
+        except Exception as e:
+            result = 'False'
+            _logger_err.exception(sql)
+            raise e
+        finally:
+            delta = int((time.time() - start) * 1000)
+            log_string = '({0}),{1},{2}ms'.format(sql, result, delta)
+            _logger.info(log_string)
+
+    return _wrapper
 
 
+# outter exception wrapper
+def exception_handler(func):
+    @functools.wraps(func)
+    def _wrapper(*args, **kw):
+        try:
+            return func(*args, **kw)
+        except Exception as e:
+            log_string = '{0},{1},{2}'.format(func.__name__, args, kw)
+            _logger_err.exception(log_string)
+            raise e
+
+    return _wrapper
+
+
+@with_connection
+@sql_with_logging
 def execute(sql):
-    cursor = DB_CONNECTION.cursor()
+    cursor = None
+    success = False
+    global _DB_CONNECTOR
     try:
-        if ECHO:
-            print sql
+        cursor = _DB_CONNECTOR.cursor()
         cursor.execute(sql)
-        DB_CONNECTION.commit()
-        logger.info(sql)
-    except Exception as e:
-        print e
-        logger_err.error(sql)
-        logger_err.exception(str(e))
-    cursor.close()
+        success = True
+        if _DB_CONNECTOR.transaction_level == 0:
+            _DB_CONNECTOR.commit()
+    finally:
+        if not success and _DB_CONNECTOR.transaction_level != 0:
+            _DB_CONNECTOR.need_rollback = True
+        if cursor:
+            cursor.close()
 
 
+@with_connection
+@sql_with_logging
 def select(sql):
-    cursor = DB_CONNECTION.cursor()
+    cursor = None
+    success = False
+    global _DB_CONNECTOR
     try:
-        if ECHO:
-            print sql
+        cursor = _DB_CONNECTOR.cursor()
         cursor.execute(sql)
-        toReturn = [i for i in cursor]
-        logger.info(sql)
-        if ECHO:
-            print toReturn
-        return toReturn
-    except Exception as e:
-        print e
-        logger_err.error(sql)
-        logger_err.exception(str(e))
-    cursor.close()
+        success = True
+        results = [i for i in cursor]
+        return results
+    finally:
+        if not success and _DB_CONNECTOR.transaction_level != 0:
+            _DB_CONNECTOR.need_rollback = True
+        if cursor:
+            cursor.close()
 
 
+@exception_handler
 def insert_into(table_name, **args):
-    try:
-        keys = args.keys()
-        values = [sql_format(args[key]) for key in keys]
-        sql = "insert into {0} ({1})values({2})".format(
-            table_name, ",".join(keys), ",".join(values))
-        execute(sql)
-    except Exception as e:
-        print e
-        logger_err.exception(str(e))
+    keys = args.keys()
+    values = [sql_format(args[key]) for key in keys]
+    sql = "insert into {0} ({1})values({2})".format(
+        table_name, ",".join(keys), ",".join(values))
+    execute(sql)
 
 
+@exception_handler
 def select_from(table_name, **args):
-    try:
-        if len(args) > 0:
-            sql = "select * from {0} where ".format(table_name)
-            for key in args:
-                formatted_key = sql_format(args[key])
-                if formatted_key == 'null':
-                    sql += "{0} is {1} and ".format(key, 'null')
-                else:
-                    sql += "{0} = {1} and ".format(key, formatted_key)
-            sql = sql[:-5]
-        else:
-            sql = "select * from " + table_name
-
-        return select(sql)
-    except Exception as e:
-        print e
-        logger_err.exception(str(e))
+    if len(args) > 0:
+        sql = "select * from {0} where ".format(table_name)
+        for key in args:
+            formatted_key = sql_format(args[key])
+            if formatted_key == 'null':
+                sql += "{0} is {1} and ".format(key, 'null')
+            else:
+                sql += "{0} = {1} and ".format(key, formatted_key)
+        sql = sql[:-5]
+    else:
+        sql = "select * from " + table_name
+    return select(sql)
 
 
+@exception_handler
 def delete_from(table_name, **args):
-    try:
-        if len(args) > 0:
-            sql = "delete from {0} where ".format(table_name)
-            for key in args:
-                formatted_key = sql_format(args[key])
-                if formatted_key == 'null':
-                    sql += "{0} is {1} and ".format(key, 'null')
-                else:
-                    sql += "{0} = {1} and ".format(key, formatted_key)
-            sql = sql[:-5]
-        else:
-            sql = "select * from " + table_name
-        execute(sql)
-    except Exception as e:
-        print e
-        logger_err.exception(str(e))
+    if len(args) > 0:
+        sql = "delete from {0} where ".format(table_name)
+        for key in args:
+            formatted_key = sql_format(args[key])
+            if formatted_key == 'null':
+                sql += "{0} is {1} and ".format(key, 'null')
+            else:
+                sql += "{0} = {1} and ".format(key, formatted_key)
+        sql = sql[:-5]
+    else:
+        sql = "select * from " + table_name
+    execute(sql)
 
 
+@exception_handler
 def update(table_name, **args):
-    try:
-        keys = args.keys()
-        query_keys = filter(lambda x: x[0] == '_', keys)
-        update_keys = filter(lambda x: x[0] != '_', keys)
-        query_keys = list(map(lambda x: x[1:], query_keys))
-        for key in keys:
-            args[key] = sql_format(args[key])
-        where_clause = ''
-        if len(query_keys) != 0:
-            where_clause = 'where '
-            for key in query_keys:
-                formatted_key = args['_' + key]
-                if formatted_key == 'null':
-                    where_clause += "{0} is {1} and ".format(key, 'null')
-                else:
-                    where_clause += "{0} = {1} and ".format(key, formatted_key)
-            where_clause = where_clause[:-5]
-        update_clause = ''
-        for key in update_keys:
-            update_clause += "{0} = {1}, ".format(key, args[key])
-        update_clause = update_clause[:-2]
-        sql = "update {0} set {1} {2}".format(
-            table_name, update_clause, where_clause)
-        execute(sql)
-    except Exception as e:
-        print e
-        logger_err.exception(str(e))
-
-
-# todo：支持更复杂的query范围，><等
-# todo: 变量名等格式化
-# todo: 异常处理
-class StockDAL:
-    # 控制是否输出sql todo:对connector反馈一并更好控制
-    ECHO = False
-    # todo:增加logger，logger也需要控制
-
-    config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
-
-    def __init__(self):
-        # todo: 配置文件化
-        # toda: 线程管理，资源管理
-        self.logger = LogConstant.DAL_DIGEST_LOGGER
-        self.logger_err = LogConstant.DAL_DIGEST_LOGGER_ERROR
-        self.conn = mysql.connector.connect(
-            host=self.config.DB_HOST, user=self.config.DB_USER, passwd=self.config.DB_PASSWORD,
-            database=self.config.DB_NAME)
-
-    def close(self):
-        try:
-            self.conn.close()
-        except Exception as e:
-            print e
-            self.logger_err.exception(str(e))
-
-    def insert_into(self, table_name, **args):
-        try:
-            cursor = self.conn.cursor()
-            keys = args.keys()
-            values = [sql_format(args[key]) for key in keys]
-            sql = "insert into {0} ({1})values({2})".format(
-                table_name, ",".join(keys), ",".join(values))
-            self.execute(sql)
-        except Exception as e:
-            print e
-            self.logger_err.exception(str(e))
-
-    def select_from(self, table_name, **args):
-        try:
-            if len(args) > 0:
-                sql = "select * from {0} where ".format(table_name)
-                for key in args:
-                    formatted_key = sql_format(args[key])
-                    if formatted_key == 'null':
-                        sql += "{0} is {1} and ".format(key, 'null')
-                    else:
-                        sql += "{0} = {1} and ".format(key, formatted_key)
-                sql = sql[:-5]
+    keys = args.keys()
+    query_keys = filter(lambda x: x[0] == '_', keys)
+    update_keys = filter(lambda x: x[0] != '_', keys)
+    query_keys = list(map(lambda x: x[1:], query_keys))
+    for key in keys:
+        args[key] = sql_format(args[key])
+    where_clause = ''
+    if len(query_keys) != 0:
+        where_clause = 'where '
+        for key in query_keys:
+            formatted_key = args['_' + key]
+            if formatted_key == 'null':
+                where_clause += "{0} is {1} and ".format(key, 'null')
             else:
-                sql = "select * from " + table_name
-
-            return self.select(sql)
-        except Exception as e:
-            print e
-            self.logger_err.exception(str(e))
-
-    def delete_from(self, table_name, **args):
-        try:
-            if len(args) > 0:
-                sql = "delete from {0} where ".format(table_name)
-                for key in args:
-                    formatted_key = sql_format(args[key])
-                    if formatted_key == 'null':
-                        sql += "{0} is {1} and ".format(key, 'null')
-                    else:
-                        sql += "{0} = {1} and ".format(key, formatted_key)
-                sql = sql[:-5]
-            else:
-                sql = "select * from " + table_name
-            self.execute(sql)
-        except Exception as e:
-            print e
-            self.logger_err.exception(str(e))
-
-    def update(self, table_name, **args):
-        try:
-            cur = self.conn.cursor()
-            keys = args.keys()
-            query_keys = filter(lambda x: x[0] == '_', keys)
-            update_keys = filter(lambda x: x[0] != '_', keys)
-            query_keys = list(map(lambda x: x[1:], query_keys))
-            for key in keys:
-                args[key] = sql_format(args[key])
-            where_clause = ''
-            if len(query_keys) != 0:
-                where_clause = 'where '
-                for key in query_keys:
-                    formatted_key = args['_' + key]
-                    if formatted_key == 'null':
-                        where_clause += "{0} is {1} and ".format(key, 'null')
-                    else:
-                        where_clause += "{0} = {1} and ".format(key, formatted_key)
-                where_clause = where_clause[:-5]
-            update_clause = ''
-            for key in update_keys:
-                update_clause += "{0} = {1}, ".format(key, args[key])
-            update_clause = update_clause[:-2]
-            sql = "update {0} set {1} {2}".format(
-                table_name, update_clause, where_clause)
-            self.execute(sql)
-        except Exception as e:
-            print e
-            self.logger_err.exception(str(e))
-
-    def select(self, sql):
-        cur = self.conn.cursor()
-        try:
-            if StockDAL.ECHO:
-                print sql
-            cur.execute(sql)
-            toReturn = [i for i in cur]
-            self.logger.info(sql)
-            if StockDAL.ECHO:
-                print toReturn
-            return toReturn
-        except Exception as e:
-            print e
-            self.logger_err.error(sql)
-            self.logger_err.exception(str(e))
-        cur.close()
-
-    def execute(self, sql):
-        ##这块要研究下
-        cur = self.conn.cursor()
-        try:
-            if StockDAL.ECHO:
-                print sql
-            cur.execute(sql)
-            # 坑？？
-            self.conn.commit()
-            self.logger.info(sql)
-        except Exception as e:
-            print e
-            self.logger_err.error(sql)
-            self.logger_err.exception(str(e))
-        cur.close()
+                where_clause += "{0} = {1} and ".format(key, formatted_key)
+        where_clause = where_clause[:-5]
+    update_clause = ''
+    for key in update_keys:
+        update_clause += "{0} = {1}, ".format(key, args[key])
+    update_clause = update_clause[:-2]
+    sql = "update {0} set {1} {2}".format(
+        table_name, update_clause, where_clause)
+    execute(sql)
 
 
 if __name__ == '__main__':
-    StockDAL.ECHO = True
+    config = DBconfig.DBConfig("conf/jdjw_trade_db.cfg")
+    config_args = dict(zip(['host', 'user', 'passwd', 'database'],
+                           [config.DB_HOST, config.DB_USER, config.DB_PASSWORD, config.DB_NAME]))
     ECHO = True
-    a = StockDAL()
-    a.insert_into('stock', ticker="uber", name=None)
-    a.insert_into('stock', aticker="uber", name=None)
-    a.select_from('stock', ticker="uber", name=None)
-    a.update('stock', _ticker="uber", _name=None, name="优步")
-    a.delete_from('stock', ticker='uber', pv_close=None)
-    a.close()
-    insert_into('stock', ticker='sheng')
+    create_engine(**config_args)
+    try:
+        with connection():
+            print _DB_CONNECTOR.conn
+            print 1
+            raise Exception()
+    except:
+        print 'good'
+
+    print _DB_CONNECTOR.conn
+    close_engine()
+    print _DB_ENGINE
+
+    create_engine(**config_args)
+    select_from('stock', ticker='aapl')
+    try:
+        with connection():
+            insert_into('stock', ticker='sheng')
+            insert_into('stock', aticker='sheng')
+    except:
+        pass
     select_from('stock', name=None)
     update('stock', _ticker='sheng', _name=None, name='shengye')
     delete_from('stock', ticker="sheng", pv_close=None)
-    close()
-    print 'finished'
+
+    with transaction():
+        select_from('stock', ticker='aapl')
+        insert_into('stock', ticker='sheng')
+        update('stock', _ticker='sheng', _name=None, name='shengye')
+        with transaction():
+            select_from('stock', ticker='aapl')
+            insert_into('stock', ticker='sheng')
+            update('stock', _ticker='sheng', _name=None, name='shengye')
+            delete_from('stock', ticker="sheng", pv_close=None)
+        delete_from('stock', ticker="sheng", pv_close=None)
+    print select_from('stock')
+    close_engine()

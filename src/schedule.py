@@ -1,20 +1,32 @@
 #! /usr/bin/env python
 # coding=utf-8
+
+import utils.PathHelper
+
 import time
-import os
 import sched
+import datetime
+import threading
+
+import utils.LogConstant as LogConstant
+import fetch_data
 
 schedule = sched.scheduler(time.time, time.sleep)
 
-
-def perform_command(cmd, inc):
-    schedule.enter(inc, 0, perform_command, (cmd, inc))
-    os.system(cmd)
+logger = LogConstant.FETCH_DIGEST_LOGGER
 
 
-def timming_exe(cmd, inc=60):
-    schedule.enter(inc, 0, perform_command, (cmd, inc))
-    schedule.run()
+def perform_command():
+    ##do something
+    logger.info('starting python')
+    thread = threading.Thread(target=fetch_data.run)
+    thread.start()
+    now = datetime.datetime.now()
+    delta = (1100000 - now.microsecond) / 1000000.0
+    schedule.enter(delta, 0, perform_command, ())
 
 
-timming_exe("python fetch_data.py &", 1)
+now = datetime.datetime.now()
+delta = (1100000 - now.microsecond) / 1000000.0
+schedule.enter(delta, 0, perform_command, ())
+schedule.run()

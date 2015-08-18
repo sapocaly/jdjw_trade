@@ -9,7 +9,6 @@ import datetime
 
 
 class Timezone(datetime.tzinfo):
-
     def __init__(self, arg):
         super(GMT8, self).__init__()
         self.arg = arg
@@ -17,6 +16,7 @@ class Timezone(datetime.tzinfo):
 
 class GMT8(datetime.tzinfo):
     """docstring for GMT8"""
+
     def __init__(self, arg):
         super(GMT8, self).__init__()
         self.arg = arg
@@ -34,6 +34,7 @@ class GMT8(datetime.tzinfo):
 
 class GMT8(datetime.tzinfo):
     """docstring for GMT8"""
+
     def __init__(self, arg):
         super(GMT8, self).__init__()
         self.arg = arg

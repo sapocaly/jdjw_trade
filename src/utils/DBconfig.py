@@ -25,13 +25,3 @@ class DBConfig:
 
         if self.DB_MODE == "LOCAL":
             self.DB_HOST = "127.0.0.1"
-
-
-if __name__ == "__main__":
-    print "Load local config file"
-    cfg = DBConfig("../conf/jdjw_trade_db.cfg")
-    print cfg.DB_HOST
-    print cfg.DB_PORT
-    print cfg.DB_USER
-    print cfg.DB_PASSWORD
-    print cfg.DB_NAME

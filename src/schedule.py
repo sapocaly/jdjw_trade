@@ -1,15 +1,15 @@
 #! /usr/bin/env python
 # coding=utf-8
 
+
 import utils.PathHelper
 
 import time
 import sched
 import datetime
 import threading
-
+import mini_fetcher
 import utils.LogConstant as LogConstant
-import fetch_data
 
 schedule = sched.scheduler(time.time, time.sleep)
 
@@ -19,7 +19,7 @@ logger = LogConstant.FETCH_DIGEST_LOGGER
 def perform_command():
     ##do something
     logger.info('starting python')
-    thread = threading.Thread(target=fetch_data.run)
+    thread = threading.Thread(target=mini_fetcher.run)
     thread.start()
     now = datetime.datetime.now()
     delta = (1100000 - now.microsecond) / 1000000.0

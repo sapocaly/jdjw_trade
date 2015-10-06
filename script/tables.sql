@@ -8,7 +8,6 @@ CREATE TABLE `stock` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-
 CREATE TABLE `quote` (
   `id` tinyint(4) unsigned NOT NULL,
   `price` int(10) unsigned NOT NULL,
@@ -50,5 +49,22 @@ CREATE TABLE `transaction` (
   `shares` int(10) NOT NULL,
   `price` int(10) unsigned NOT NULL,
   `total` int(10) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `mini_quote` (
+  `id` tinyint(4) unsigned NOT NULL,
+  `price` int(10) unsigned NOT NULL,
+  `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`time`,`id`),
+  CONSTRAINT `stock_data_ibfk_2` FOREIGN KEY (`id`) REFERENCES `mini_stock` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `mini_stock` (
+  `id` tinyint(4) unsigned NOT NULL AUTO_INCREMENT,
+  `ticker` char(5) NOT NULL,
+  `name` varchar(32) DEFAULT NULL,
+  `pv_close` int(11) DEFAULT NULL,
+  `pv_volume` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

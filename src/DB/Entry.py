@@ -18,6 +18,16 @@ class Quote(Model):
     fields = ['id', 'price', 'volume', 'time']
 
 
+class M_Stock(Model):
+    table = 'mini_stock'  # table name is stock
+    fields = ['id', 'ticker', 'name', 'pv_close', 'pv_volume']
+
+
+class M_Quote(Model):
+    table = 'mini_quote'
+    fields = ['id', 'price', 'time']
+
+
 class Portfolio(Model):
     table = 'portfolio'
     fields = ['id', 'name', 'init_fund', 'strategy']

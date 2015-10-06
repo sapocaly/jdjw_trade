@@ -1,3 +1,4 @@
+__author__ = 'Sapocaly'
 #!usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -31,7 +32,7 @@ logger_alert = LogConstant.FETCH_DIGEST_LOGGER_ALERT
 
 def get_stock_list():
     # read from db
-    results = Entry.Stock.get()
+    results = Entry.M_Stock.get()
     ticker_id_dict = {}
     for stock in results:
         ticker_id_dict[stock['ticker']] = stock['id']
@@ -70,14 +71,13 @@ def fetch_quotes(ticker_id_dict):
         quote_data = data['query']['results']['quote']
 
         # create objects
-        quotes = [Entry.Quote(id=ticker_id_dict[q['symbol']],
+        quotes = [Entry.M_Quote(id=ticker_id_dict[q['symbol']],
                                price=unicode2int(q['LastTradePriceOnly']),
-                               volume=q['Volume'],
                                time=fetch_time)
                   for q in quote_data]
         count = len(quotes)
         # write results into db
-        Entry.Quote.add(quotes)
+        Entry.M_Quote.add(quotes)
         result = 'True'
     except Exception as e:
         result = 'False'

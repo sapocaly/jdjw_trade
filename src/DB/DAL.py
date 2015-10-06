@@ -96,6 +96,7 @@ def connection():
     return Connection()
 
 
+# connection wrapper
 def with_connection(func):
     @functools.wraps(func)
     def _wrapper(*args, **kw):
@@ -159,6 +160,7 @@ def transaction():
     return Transaction()
 
 
+# transaction wrapper
 def with_transaction(func):
     @functools.wraps(func)
     def _wrapper(*args, **kw):

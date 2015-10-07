@@ -25,7 +25,7 @@ class M_Stock(Model):
 
 class M_Quote(Model):
     table = 'mini_quote'
-    fields = ['id', 'price', 'time']
+    fields = ['sid', 'price', 'time']
 
 
 class Portfolio(Model):

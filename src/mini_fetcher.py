@@ -71,7 +71,7 @@ def fetch_quotes(ticker_id_dict):
         quote_data = data['query']['results']['quote']
 
         # create objects
-        quotes = [Entry.M_Quote(id=ticker_id_dict[q['symbol']],
+        quotes = [Entry.M_Quote(sid=ticker_id_dict[q['symbol']],
                                price=unicode2int(q['LastTradePriceOnly']),
                                time=fetch_time)
                   for q in quote_data]

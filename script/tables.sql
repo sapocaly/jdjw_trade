@@ -53,11 +53,11 @@ CREATE TABLE `transaction` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `mini_quote` (
-  `id` tinyint(4) unsigned NOT NULL,
+  `sid` tinyint(4) unsigned NOT NULL,
   `price` int(10) unsigned NOT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`time`,`id`),
-  CONSTRAINT `stock_data_ibfk_2` FOREIGN KEY (`id`) REFERENCES `mini_stock` (`id`)
+  PRIMARY KEY (`time`,`sid`),
+  CONSTRAINT `stock_data_ibfk_2` FOREIGN KEY (`sid`) REFERENCES `mini_stock` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `mini_stock` (
